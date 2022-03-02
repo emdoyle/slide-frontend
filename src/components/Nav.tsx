@@ -5,16 +5,14 @@ import Link from "next/link";
 export const Nav: FC<{}> = () => {
   return (
     <div className="navbar mb-2 shadow-lg bg-neutral text-neutral-content rounded-box">
-      <div className="flex-none">
-        <Link href="/">
-          <button className="btn btn-square btn-ghost">
-            <span className="text-4xl">🏠</span>
-          </button>
-        </Link>
-      </div>
+      <Link href="/">
+        <button className="btn btn-square btn-ghost">
+          <span className="text-4xl">🏠</span>
+        </button>
+      </Link>
       <Link href="/daos">
         <button className="btn btn-square btn-ghost">
-          <span className="">DAOs</span>
+          <span className="text-4xl">🌐</span>
         </button>
       </Link>
       <div className="flex-1 px-2 mx-2">

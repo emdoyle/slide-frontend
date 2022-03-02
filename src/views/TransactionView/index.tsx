@@ -9,15 +9,27 @@ import styles from "./index.module.css";
 const walletPublicKey = "3EqUrFrjgABCWAnqMYjZ36GcktiwDtFdkNYwY6C6cDzy";
 
 const transactions = [
-  { name: "Coffee", id: "1", status: "pending" },
-  { name: "Lunch", id: "2", status: "approved" },
-  { name: "Desk", id: "3", status: "denied" },
+  { name: "Coffee", id: "1", status: "pending", amount: 0.01 },
+  { name: "Lunch", id: "2", status: "approved", amount: 0.02 },
+  { name: "Desk", id: "3", status: "denied", amount: 0.1 },
 ];
 
 const Modal = ({ open, close }: { open: boolean; close(): void }) => (
   <div className={`modal ${open && "modal-open"}`}>
     <div className="modal-box">
       <h3 className="font-bold text-lg">Add a new expense</h3>
+      <div className="flex flex-col gap-2 justify-center">
+        <input
+          type="text"
+          placeholder="For"
+          className="input input-bordered w-full bg-white text-black"
+        />
+        <input
+          type="number"
+          placeholder="Amount (in SOL)"
+          className="input input-bordered w-full bg-white text-black"
+        />
+      </div>
       <div className="flex gap-2 mt-4 justify-center">
         <button className="btn btn-primary">Create</button>
         <button className="btn" onClick={close}>
