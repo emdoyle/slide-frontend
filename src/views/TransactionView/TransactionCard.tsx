@@ -12,7 +12,18 @@ export const TransactionCard: FC<Props> = ({ details }) => {
     <div className="bordered w-full compact rounded-md bg-white">
       <div className="flex justify-between items-center p-4">
         <h2 className="text-lg text-black">{details.name}</h2>
-        <button className="btn w-24" disabled>View</button>
+        {details.status === "pending" && (
+          <div className="flex gap-2">
+            <button className="btn btn-success w-24">Approve</button>
+            <button className="btn btn-error w-24">Deny</button>
+          </div>
+        )}
+        {details.status === "approved" && (
+          <button className="btn btn-success btn-disabled w-24">Approved</button>
+        )}
+        {details.status === "denied" && (
+          <button className="btn btn-error btn-disabled w-24">Denied</button>
+        )}
       </div>
     </div>
   );

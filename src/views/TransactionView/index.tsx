@@ -9,8 +9,9 @@ import styles from "./index.module.css";
 const walletPublicKey = "3EqUrFrjgABCWAnqMYjZ36GcktiwDtFdkNYwY6C6cDzy";
 
 const transactions = [
-  { name: "Coffee", id: "1" },
-  { name: "Lunch", id: "2" },
+  { name: "Coffee", id: "1", status: "pending" },
+  { name: "Lunch", id: "2", status: "approved" },
+  { name: "Desk", id: "3", status: "denied" },
 ];
 
 export const TransactionView: FC = ({}) => {
