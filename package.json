@@ -13,6 +13,7 @@
     "@nfteyez/sol-rayz-react": "^0.8.2",
     "@project-serum/anchor": "^0.21.0",
     "@slidexyz/slide-sdk": "file:../slide-sdk/lib",
+    "@slidexyz/squads-sdk": "file:../squads-sdk/lib",
     "@solana/buffer-layout": "^4.0.0",
     "@solana/spl-governance": "^0.0.28",
     "@solana/spl-token": "^0.1.8",
