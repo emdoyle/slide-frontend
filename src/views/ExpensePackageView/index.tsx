@@ -4,11 +4,11 @@ import { useWalletNfts, NftTokenAccount } from "@nfteyez/sol-rayz-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 
 import { Loader, Nav } from "components";
-import { TransactionCard } from "./TransactionCard";
+import { ExpensePackageCard } from "./ExpensePackageCard";
 import styles from "./index.module.css";
 const walletPublicKey = "3EqUrFrjgABCWAnqMYjZ36GcktiwDtFdkNYwY6C6cDzy";
 
-const transactions = [
+const expensePackages = [
   { name: "Coffee", id: "1", status: "pending", amount: 0.01 },
   { name: "Lunch", id: "2", status: "approved", amount: 0.02 },
   { name: "Desk", id: "3", status: "denied", amount: 0.1 },
@@ -40,7 +40,7 @@ const Modal = ({ open, close }: { open: boolean; close(): void }) => (
   </div>
 );
 
-export const TransactionView: FC = ({}) => {
+export const ExpensePackageView: FC = ({}) => {
   const [open, setOpen] = useState(false);
   const { connection } = useConnection();
   const [walletToParsePublicKey, setWalletToParsePublicKey] =
@@ -55,7 +55,7 @@ export const TransactionView: FC = ({}) => {
             <div className="text-center hero-content w-full">
               <div className="w-full">
                 <div className="flex justify-between">
-                  <h1 className="mb-5 text-5xl">Transactions for Anmol DAO</h1>
+                  <h1 className="mb-5 text-5xl">Expenses for Anmol DAO</h1>
                   <button
                     className="btn btn-primary"
                     onClick={() => setOpen(true)}
@@ -64,7 +64,7 @@ export const TransactionView: FC = ({}) => {
                   </button>
                 </div>
                 <div className="my-4">
-                  <TransactionList transactions={transactions} />
+                  <ExpensePackageList expensePackages={expensePackages} />
                 </div>
                 <Modal open={open} close={() => setOpen(false)} />
               </div>
@@ -76,15 +76,15 @@ export const TransactionView: FC = ({}) => {
   );
 };
 
-type TransactionListProps = {
-  transactions: any[];
+type ExpensePackageListProps = {
+  expensePackages: any[];
 };
 
-const TransactionList = ({ transactions }: TransactionListProps) => {
+const ExpensePackageList = ({ expensePackages }: ExpensePackageListProps) => {
   return (
     <div className="flex flex-col gap-4">
-      {transactions?.map((transaction) => (
-        <TransactionCard key={transaction.id} details={transaction} />
+      {expensePackages?.map((expensePackage) => (
+        <ExpensePackageCard key={expensePackage.id} details={expensePackage} />
       ))}
     </div>
   );

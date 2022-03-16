@@ -1,15 +1,15 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { SolanaTweeterView } from "../views";
+import { ExpensePackageView } from "../views";
 
 const Home: NextPage = (props) => {
   return (
     <div>
       <Head>
-        <title>Solana Tweeter!</title>
-        <meta name="description" content="This site will fly high 🦤" />
+        <title>DAO Expense Management</title>
+        <meta name="description" content="Expense packages" />
       </Head>
-      <SolanaTweeterView />
+      <ExpensePackageView />
     </div>
   );
 };

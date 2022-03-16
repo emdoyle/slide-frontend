@@ -10,7 +10,7 @@ export const Nav: FC<{}> = () => {
           <span className="text-4xl">🏠</span>
         </button>
       </Link>
-      <Link href="/daos">
+      <Link href="/managers">
         <button className="btn btn-square btn-ghost">
           <span className="text-4xl">🌐</span>
         </button>

@@ -7,7 +7,7 @@ type Props = {
   details: any;
 };
 
-export const TransactionCard: FC<Props> = ({ details }) => {
+export const ExpensePackageCard: FC<Props> = ({ details }) => {
   return (
     <div className="bordered w-full compact rounded-md bg-white">
       <div className="flex justify-between items-center p-4">

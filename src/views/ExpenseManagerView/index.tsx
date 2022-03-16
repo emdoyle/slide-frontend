@@ -4,16 +4,16 @@ import { useWalletNfts, NftTokenAccount } from "@nfteyez/sol-rayz-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 
 import { Loader, Nav } from "components";
-import { DAOCard } from "./DAOCard";
+import { ExpenseManagerCard } from "./ExpenseManagerCard";
 import styles from "./index.module.css";
 const walletPublicKey = "3EqUrFrjgABCWAnqMYjZ36GcktiwDtFdkNYwY6C6cDzy";
 
-const DAOs = [
+const ExpenseManagers = [
   { name: "Anmol DAO", id: "1" },
   { name: "Evan DAO", id: "2" },
 ];
 
-export const DAOView: FC = ({}) => {
+export const ExpenseManagerView: FC = ({}) => {
   const { connection } = useConnection();
   const [walletToParsePublicKey, setWalletToParsePublicKey] =
     useState<string>(walletPublicKey);
@@ -57,7 +57,7 @@ export const DAOView: FC = ({}) => {
                       <Loader />
                     </div>
                   ) : (
-                    <DAOList daos={DAOs} />
+                    <ExpenseManagerList expenseManagers={ExpenseManagers} />
                   )}
                 </div>
               </div>
@@ -69,16 +69,16 @@ export const DAOView: FC = ({}) => {
   );
 };
 
-type DAOListProps = {
-  daos: any[];
+type ExpenseManagerListProps = {
+  expenseManagers: any[];
   error?: Error;
 };
 
-const DAOList = ({ daos }: DAOListProps) => {
+const ExpenseManagerList = ({ expenseManagers }: ExpenseManagerListProps) => {
   return (
     <div className="flex flex-col gap-4">
-      {daos?.map((dao) => (
-        <DAOCard key={dao.id} details={dao} />
+      {expenseManagers?.map((expenseManager) => (
+        <ExpenseManagerCard key={expenseManager.id} details={expenseManager} />
       ))}
     </div>
   );
