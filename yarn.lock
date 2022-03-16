@@ -427,6 +427,13 @@
   dependencies:
     buffer "~6.0.3"
 
+"@solana/buffer-layout@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@solana/buffer-layout/-/buffer-layout-4.0.0.tgz#75b1b11adc487234821c81dfae3119b73a5fd734"
+  integrity sha512-lR0EMP2HC3+Mxwd4YcnZb0smnaDw7Bl2IQWZiTevRH5ZZBZn6VRWn3/92E3qdU4SSImJkA6IDHawOHAnx/qUvQ==
+  dependencies:
+    buffer "~6.0.3"
+
 "@solana/spl-governance@^0.0.28":
   version "0.0.28"
   resolved "https://registry.yarnpkg.com/@solana/spl-governance/-/spl-governance-0.0.28.tgz#70bd2e6ab04cc26ef4a525d77068db3f667e242d"
@@ -5054,6 +5061,11 @@ prelude-ls@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.2.1.tgz#debc6489d7a6e6b0e7611888cec880337d316396"
   integrity sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==
+
+prettier@^2.5.1:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.6.0.tgz#12f8f504c4d8ddb76475f441337542fa799207d4"
+  integrity sha512-m2FgJibYrBGGgQXNzfd0PuDGShJgRavjUoRCw1mZERIWVSXF0iLzLm+aOqTAbLnC3n6JzUhAA8uZnFVghHJ86A==
 
 pretty-hrtime@^1.0.3:
   version "1.0.3"

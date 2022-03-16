@@ -5,7 +5,7 @@ class MyDocument extends Document {
     return (
       <Html>
         <Head>
-          <meta name="description" content="This site will fly high 🦤" />
+          <meta name="description" content="Slide Application" />
           <link rel="icon" href="/favicon.ico" />
           <link rel="manifest" href="/site.webmanifest" />
         </Head>

@@ -7,7 +7,7 @@ const Home: NextPage = (props) => {
     <div>
       <Head>
         <title>DAO Expense Management</title>
-        <meta name="description" content="This site will fly high 🦤" />
+        <meta name="description" content="Expense packages" />
       </Head>
       <TransactionView />
     </div>
