@@ -1,39 +1,21 @@
-import { FC, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletNfts, NftTokenAccount } from "@nfteyez/sol-rayz-react";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { FC } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 
 import { Loader, Nav } from "components";
 import { ExpenseManagerCard } from "./ExpenseManagerCard";
 import styles from "./index.module.css";
-const walletPublicKey = "3EqUrFrjgABCWAnqMYjZ36GcktiwDtFdkNYwY6C6cDzy";
 
-const ExpenseManagers = [
+const expenseManagers = [
   { name: "Anmol DAO", id: "1" },
   { name: "Evan DAO", id: "2" },
 ];
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connection } = useConnection();
-  const [walletToParsePublicKey, setWalletToParsePublicKey] =
-    useState<string>(walletPublicKey);
   const { publicKey } = useWallet();
 
-  const { nfts, isLoading } = useWalletNfts({
-    publicAddress: walletToParsePublicKey,
-    connection,
-  });
-
-  // const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { value } = e.target;
-  //   setWalletToParsePublicKey(value.trim());
-  // };
-
-  // const onUseWalletClick = () => {
-  //   if (publicKey) {
-  //     setWalletToParsePublicKey(publicKey?.toBase58());
-  //   }
-  // };
+  // TODO: actually fetch expense managers for publicKey (slide SDK/anchor program)
+  const isLoading = false;
 
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
@@ -57,7 +39,7 @@ export const ExpenseManagerView: FC = ({}) => {
                       <Loader />
                     </div>
                   ) : (
-                    <ExpenseManagerList expenseManagers={ExpenseManagers} />
+                    <ExpenseManagerList expenseManagers={expenseManagers} />
                   )}
                 </div>
               </div>

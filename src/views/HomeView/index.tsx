@@ -5,8 +5,6 @@ import { Nav } from "components";
 import styles from "./index.module.css";
 
 export const HomeView: FC = ({}) => {
-  const { publicKey } = useWallet();
-
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -19,6 +17,7 @@ export const HomeView: FC = ({}) => {
                 <h1 className="mb-5 text-5xl font-bold">Welcome to Slide!</h1>
               </div>
             </div>
+            {/* should have some sort of description/explainer here */}
           </div>
         </div>
       </div>

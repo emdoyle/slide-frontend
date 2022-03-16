@@ -1,12 +1,10 @@
 import { FC, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletNfts, NftTokenAccount } from "@nfteyez/sol-rayz-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 
-import { Loader, Nav } from "components";
+import { Nav } from "components";
 import { ExpensePackageCard } from "./ExpensePackageCard";
 import styles from "./index.module.css";
-const walletPublicKey = "3EqUrFrjgABCWAnqMYjZ36GcktiwDtFdkNYwY6C6cDzy";
 
 const expensePackages = [
   { name: "Coffee", id: "1", status: "pending", amount: 0.01 },
@@ -43,8 +41,6 @@ const Modal = ({ open, close }: { open: boolean; close(): void }) => (
 export const ExpensePackageView: FC = ({}) => {
   const [open, setOpen] = useState(false);
   const { connection } = useConnection();
-  const [walletToParsePublicKey, setWalletToParsePublicKey] =
-    useState<string>(walletPublicKey);
   const { publicKey } = useWallet();
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
