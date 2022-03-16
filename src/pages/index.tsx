@@ -1,6 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import { HomeView } from "../views";
+import { constants } from "@slidexyz/slide-sdk";
 
 const Home: NextPage = (props) => {
   return (
@@ -9,7 +10,7 @@ const Home: NextPage = (props) => {
         <title>Slide</title>
         <meta
           name="description"
-          content="DAO Expense Management"
+          content={`DAO Expense Management ${constants.SQUADS_PROGRAM_ID}`}
         />
       </Head>
       <HomeView />
