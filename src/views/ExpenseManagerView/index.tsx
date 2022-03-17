@@ -9,6 +9,8 @@ import { PromptConnectWallet } from "components/PromptConnectWallet";
 import { ExpenseManagerItem } from "types";
 
 export const ExpenseManagerView: FC = ({}) => {
+  const { connected } = useWallet();
+  const [open, setOpen] = useState(false);
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -24,9 +26,20 @@ export const ExpenseManagerView: FC = ({}) => {
                   <p className="mb-5">Manage expenses for your DAOs</p>
                 </div>
 
-                <button className="btn btn-primary">+ Add Manager</button>
+                {connected && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setOpen(true)}
+                  >
+                    + Add Manager
+                  </button>
+                )}
 
                 <ExpenseManagerContent />
+                <CreateExpenseManagerModal
+                  open={open}
+                  close={() => setOpen(false)}
+                />
               </div>
             </div>
           </div>
@@ -83,6 +96,78 @@ const ExpenseManagerList = ({ expenseManagers }: ExpenseManagerListProps) => {
           expenseManager={expenseManager}
         />
       ))}
+    </div>
+  );
+};
+
+const CreateExpenseManagerModal = ({
+  open,
+  close,
+}: {
+  open: boolean;
+  close(): void;
+}) => {
+  const [usingSPL, setUsingSPL] = useState<boolean>(true);
+
+  return (
+    <div className={`modal ${open && "modal-open"}`}>
+      <div className="modal-box">
+        <h3 className="font-bold text-lg">Create an expense manager</h3>
+        <div className="flex flex-col gap-2 justify-center">
+          <input
+            type="text"
+            placeholder="Name"
+            className="input input-bordered w-full bg-white text-black"
+          />
+          <div className="flex justify-center items-center px-4">
+            <input
+              type="radio"
+              className=""
+              name="daoProvider"
+              id="radioSPL"
+              checked={usingSPL}
+              onChange={(event) => setUsingSPL(event.target.checked)}
+            />
+            <label htmlFor="radioSPL">SPL Governance</label>
+            <input
+              type="radio"
+              className=""
+              name="daoProvider"
+              id="radioSquads"
+              checked={!usingSPL}
+              onChange={(event) => setUsingSPL(!event.target.checked)}
+            />
+            <label htmlFor="radioSquads">Squads</label>
+          </div>
+          {usingSPL && (
+            <>
+              <input
+                type="text"
+                placeholder="Realm Pubkey"
+                className="input input-bordered w-full bg-white text-black"
+              />
+              <input
+                type="number"
+                placeholder="Governance Pubkey"
+                className="input input-bordered w-full bg-white text-black"
+              />
+            </>
+          )}
+          {!usingSPL && (
+            <input
+              type="number"
+              placeholder="Squads Pubkey"
+              className="input input-bordered w-full bg-white text-black"
+            />
+          )}
+        </div>
+        <div className="flex gap-2 mt-4 justify-center">
+          <button className="btn btn-primary">Create</button>
+          <button className="btn" onClick={close}>
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
