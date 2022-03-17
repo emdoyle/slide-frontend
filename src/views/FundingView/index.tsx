@@ -4,7 +4,7 @@ import { Nav } from "components";
 
 import styles from "./index.module.css";
 
-export const SettingsView: FC = ({}) => {
+export const FundingView: FC = ({}) => {
   const { publicKey } = useWallet();
 
   return (
@@ -16,24 +16,11 @@ export const SettingsView: FC = ({}) => {
           <div className="hero min-h-16 py-4">
             <div className="text-center hero-content">
               <div className="max-w-lg">
-                <h1 className="mb-5 text-5xl">Expense Management Settings</h1>
-                <div className="flex flex-col gap-2 justify-center">
-                  <input
-                    type="text"
-                    placeholder="Name"
-                    className="input input-bordered w-full bg-white text-black"
-                  />
-                  <input
-                    type="text"
-                    placeholder="DAO Token Mint Authority"
-                    className="input input-bordered w-full bg-white text-black"
-                  />
-                  <button className="btn btn-primary">Save</button>
-                </div>
-
-                <div className="flex flex-col gap-2 justify-center mt-10">
+                <h1 className="mb-5 text-5xl">Expense Manager Funding</h1>
+                <p className="text-xl">Current balance: 10◎</p>
+                <div className="flex flex-col gap-2 justify-center mt-5">
                   <p className="text-xl">
-                    Create Proposal to send amount your Slide Expense Manager
+                    Create Proposal to fund your Slide Expense Manager
                   </p>
                   <input
                     type="number"
@@ -41,6 +28,14 @@ export const SettingsView: FC = ({}) => {
                     className="input input-bordered w-full bg-white text-black"
                   />
                   <button className="btn btn-primary">Create</button>
+                </div>
+
+                <div className="flex flex-col gap-2 justify-center mt-10">
+                  <p className="text-xl">
+                    Create Proposal to withdraw funds from your Slide Expense
+                    Manager
+                  </p>
+                  <button className="btn btn-error">Withdraw</button>
                 </div>
               </div>
             </div>

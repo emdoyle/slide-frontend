@@ -23,6 +23,11 @@ const Modal = ({ open, close }: { open: boolean; close(): void }) => (
           className="input input-bordered w-full bg-white text-black"
         />
         <input
+          type="text"
+          placeholder="Description (optional)"
+          className="input input-bordered w-full bg-white text-black"
+        />
+        <input
           type="number"
           placeholder="Amount (in SOL)"
           className="input input-bordered w-full bg-white text-black"
@@ -40,8 +45,7 @@ const Modal = ({ open, close }: { open: boolean; close(): void }) => (
 
 export const ExpensePackageView: FC = ({}) => {
   const [open, setOpen] = useState(false);
-  const { connection } = useConnection();
-  const { publicKey } = useWallet();
+
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>

@@ -18,13 +18,14 @@ export const ExpenseManagerView: FC = ({}) => {
           <div className="hero min-h-16 p-0 pt-10">
             <div className="text-center hero-content w-full">
               <div className="w-full">
-                <h1 className="mb-5 text-5xl">Solana DAOs on Slide</h1>
+                <h1 className="mb-5 text-5xl">Your DAOs</h1>
 
                 <div className="w-full min-w-full">
-                  <p className="mb-5">
-                    Here are some DAOs that use Slide to manage expenses
-                  </p>
+                  <p className="mb-5">Manage expenses for your DAOs</p>
                 </div>
+
+                <button className="btn btn-primary">+ Add Manager</button>
+
                 <ExpenseManagerContent />
               </div>
             </div>
@@ -79,7 +80,7 @@ const ExpenseManagerList = ({ expenseManagers }: ExpenseManagerListProps) => {
       {expenseManagers.map((expenseManager) => (
         <ExpenseManagerCard
           key={expenseManager.publicKey.toString()}
-          expenseManager={expenseManager.account}
+          expenseManager={expenseManager}
         />
       ))}
     </div>
