@@ -121,16 +121,20 @@ const ExpensePackageContent = ({
 
 type ExpensePackageListProps = {
   expensePackages: ExpensePackageItem[];
-  error?: Error;
+  canApproveAndDeny?: boolean;
 };
 
-const ExpensePackageList = ({ expensePackages }: ExpensePackageListProps) => {
+const ExpensePackageList = ({
+  expensePackages,
+  canApproveAndDeny,
+}: ExpensePackageListProps) => {
   return (
     <div className="flex flex-col gap-4">
       {expensePackages.map((expensePackage) => (
         <ExpensePackageCard
           key={expensePackage.publicKey.toString()}
           expensePackage={expensePackage}
+          canApproveAndDeny={canApproveAndDeny}
         />
       ))}
     </div>
