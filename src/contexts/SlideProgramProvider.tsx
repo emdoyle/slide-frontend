@@ -2,7 +2,7 @@ import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { FC, ReactNode } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { getSlide } from "@slidexyz/slide-sdk";
-import { SlideProgramContext } from "../utils/useSlide";
+import { SlideProgramContext } from "utils/useSlide";
 
 export interface SlideProgramProviderProps {
   children: ReactNode;

@@ -38,3 +38,5 @@ yarn-error.log*
 
 # pycharm
 .idea
+
+dao_member.json

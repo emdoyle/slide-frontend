@@ -8,13 +8,31 @@ import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
 import { ExpenseManagerItem } from "types";
 import { getSquadMintAddressAndBump } from "@slidexyz/squads-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { getRealm } from "@solana/spl-governance";
+import {
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from "@solana/web3.js";
+import {
+  getRealm,
+  getTokenOwnerRecordAddress,
+  GovernanceConfig,
+  VoteThresholdPercentage,
+  withCreateGovernance,
+  withCreateNativeTreasury,
+  withCreateTokenOwnerRecord,
+  withDepositGoverningTokens,
+} from "@solana/spl-governance";
 import { getExpenseManagerAddressAndBump } from "@slidexyz/slide-sdk/address";
 import { SLIDE_PROGRAM_ID } from "../../constants";
+import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
+import { TOKEN_PROGRAM_ID, createAccount } from "@solana/spl-token";
+import BN from "bn.js";
 
 export const ExpenseManagerView: FC = ({}) => {
-  const { connected } = useWallet();
+  const { connection } = useConnection();
+  const { program } = useSlideProgram();
+  const { connected, publicKey: userPublicKey } = useWallet();
   const [open, setOpen] = useState(false);
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
@@ -161,30 +179,153 @@ const CreateExpenseManagerModal = ({
       name,
       SLIDE_PROGRAM_ID
     );
-    console.log(
-      name,
-      govTokenMint.toString(),
-      expenseManager.toString(),
-      userPublicKey?.toString()
-    );
-    console.log("About to create...");
-    // this fails with unauthed signer... phantom asked for approval though
-    // maybe rerun tests? system program issue?
-    await program.methods
+
+    const createManager: TransactionInstruction = await program.methods
       .createExpenseManager(name, govTokenMint)
       .accounts({
         expenseManager,
         payer: userPublicKey,
       })
-      .rpc();
-    console.log("Created!");
+      .instruction();
+    let initializeManager: TransactionInstruction;
+    if (usingSPL) {
+      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+        SPL_GOV_PROGRAM_ID,
+        realmPubkey,
+        govTokenMint,
+        userPublicKey
+      );
+      initializeManager = await program.methods
+        .splGovInitializeExpenseManager(realmPubkey, govAuthPubkey)
+        .accounts({
+          expenseManager,
+          governanceAuthority: govAuthPubkey,
+          tokenOwnerRecord,
+          member: userPublicKey,
+        })
+        .instruction();
+    } else {
+      alert("TODO");
+      return;
+    }
+    const txn = new Transaction();
+    txn.add(createManager, initializeManager);
+    await program.provider.send(txn);
   };
+
+  // The code below is used to manually initialize governing tokens
+  // since it's not clear how to do so for a bespoke DAO via realms.today
+  // const initializeGoverningTokens = async () => {
+  //   if (program && userPublicKey && realm) {
+  //     const realmPubkey = new PublicKey(realm);
+  //     const govTokenMint = (await getRealm(connection, realmPubkey)).account
+  //       .communityMint;
+  //     const instructions: TransactionInstruction[] = [];
+  //     await withCreateTokenOwnerRecord(
+  //       instructions,
+  //       SPL_GOV_PROGRAM_ID,
+  //       realmPubkey,
+  //       userPublicKey,
+  //       govTokenMint,
+  //       userPublicKey
+  //     );
+  //     await withDepositGoverningTokens(
+  //       instructions,
+  //       SPL_GOV_PROGRAM_ID,
+  //       2,
+  //       realmPubkey,
+  //       new PublicKey("Gggr5PAEymFn4R2kGqKtfedc2efnnPzy8sYRT3fLvtYG"),
+  //       govTokenMint,
+  //       userPublicKey,
+  //       userPublicKey,
+  //       userPublicKey,
+  //       new BN(100)
+  //     );
+  //     const txn = new Transaction();
+  //     txn.add(...instructions);
+  //     await program.provider.send(txn);
+  //   }
+  // };
+
+  // The code below is used to manually initialize a Governance and Native Treasury
+  // since it's not clear how to do so for a bespoke DAO via realms.today
+  // const createGovernance = async () => {
+  //   if (program && userPublicKey && realm && name) {
+  //     const realmPubkey = new PublicKey(realm);
+  //     const [expenseManager] = getExpenseManagerAddressAndBump(
+  //       name,
+  //       SLIDE_PROGRAM_ID
+  //     );
+  //     const govTokenMint = (await getRealm(connection, realmPubkey)).account
+  //       .communityMint;
+  //     const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+  //       SPL_GOV_PROGRAM_ID,
+  //       realmPubkey,
+  //       govTokenMint,
+  //       userPublicKey
+  //     );
+  //     const instructions: TransactionInstruction[] = [];
+  //     const governance = await withCreateGovernance(
+  //       instructions,
+  //       SPL_GOV_PROGRAM_ID,
+  //       2,
+  //       realmPubkey,
+  //       expenseManager,
+  //       new GovernanceConfig({
+  //         voteThresholdPercentage: new VoteThresholdPercentage({ value: 1 }),
+  //         minCommunityTokensToCreateProposal: new BN(1),
+  //         minInstructionHoldUpTime: 0,
+  //         maxVotingTime: 100,
+  //         minCouncilTokensToCreateProposal: new BN(0),
+  //       }),
+  //       tokenOwnerRecord,
+  //       userPublicKey, // payer
+  //       userPublicKey // createAuthority
+  //     );
+  //     await withCreateNativeTreasury(
+  //       instructions,
+  //       SPL_GOV_PROGRAM_ID,
+  //       governance,
+  //       userPublicKey
+  //     );
+  //
+  //     const txn = new Transaction();
+  //     txn.add(...instructions);
+  //     await program.provider.send(txn);
+  //   }
+  // };
 
   return (
     <div className={`modal ${open && "modal-open"}`}>
       <div className="modal-box">
         <h3 className="font-bold text-lg">Create an expense manager</h3>
         <div className="flex flex-col gap-2 justify-center">
+          {/* The code below is used to manually initialize governing tokens */}
+          {/* since it's not clear how to do so for a bespoke DAO via realms.today */}
+          {/*{program && userPublicKey && realm && (*/}
+          {/*  <button*/}
+          {/*    className="btn btn-primary"*/}
+          {/*    onClick={() =>*/}
+          {/*      initializeGoverningTokens()*/}
+          {/*        .then(() => alert("Hooray!"))*/}
+          {/*        .catch(alert)*/}
+          {/*    }*/}
+          {/*  >*/}
+          {/*    Initialize*/}
+          {/*  </button>*/}
+          {/*)}*/}
+          {/*{program && userPublicKey && realm && name && (*/}
+          {/*  <button*/}
+          {/*    className="btn btn-primary"*/}
+          {/*    onClick={() =>*/}
+          {/*      createGovernance()*/}
+          {/*        .then(() => alert("Hooray!"))*/}
+          {/*        .catch(alert)*/}
+          {/*    }*/}
+          {/*  >*/}
+          {/*    Create*/}
+          {/*  </button>*/}
+          {/*)}*/}
           <input
             type="text"
             placeholder="Name"
