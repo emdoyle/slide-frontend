@@ -5,45 +5,81 @@ import { Loader, Nav } from "components";
 import { ExpensePackageCard } from "./ExpensePackageCard";
 import styles from "./index.module.css";
 import { PublicKey } from "@solana/web3.js";
-import { useSlideProgram } from "../../utils/useSlide";
-import { PromptConnectWallet } from "../../components/PromptConnectWallet";
-import { ExpensePackageItem } from "../../types";
+import { useSlideProgram } from "utils/useSlide";
+import { PromptConnectWallet } from "components/PromptConnectWallet";
+import { ExpenseManager, ExpenseManagerItem, ExpensePackageItem } from "types";
 import { useRouter } from "next/router";
 
-const Modal = ({ open, close }: { open: boolean; close(): void }) => (
-  <div className={`modal ${open && "modal-open"}`}>
-    <div className="modal-box">
-      <h3 className="font-bold text-lg">Add a new expense</h3>
-      <div className="flex flex-col gap-2 justify-center">
-        <input
-          type="text"
-          placeholder="For"
-          className="input input-bordered w-full bg-white text-black"
-        />
-        <input
-          type="text"
-          placeholder="Description (optional)"
-          className="input input-bordered w-full bg-white text-black"
-        />
-        <input
-          type="number"
-          placeholder="Amount (in SOL)"
-          className="input input-bordered w-full bg-white text-black"
-        />
-      </div>
-      <div className="flex gap-2 mt-4 justify-center">
-        <button className="btn btn-primary">Create</button>
-        <button className="btn" onClick={close}>
-          Close
-        </button>
+const CreateExpensePackageModal = ({
+  open,
+  close,
+  expenseManager,
+}: {
+  open: boolean;
+  close(): void;
+  expenseManager: ExpenseManagerItem;
+}) => {
+  const submitForm = async () => {};
+
+  return (
+    <div className={`modal ${open && "modal-open"}`}>
+      <div className="modal-box">
+        <h3 className="font-bold text-lg">Add a new expense</h3>
+        <div className="flex flex-col gap-2 justify-center">
+          <input
+            type="text"
+            placeholder="For"
+            className="input input-bordered w-full bg-white text-black"
+          />
+          <input
+            type="text"
+            placeholder="Description (optional)"
+            className="input input-bordered w-full bg-white text-black"
+          />
+          <input
+            type="number"
+            placeholder="Amount (in SOL)"
+            className="input input-bordered w-full bg-white text-black"
+          />
+        </div>
+        <div className="flex gap-2 mt-4 justify-center">
+          <button className="btn btn-primary">Create</button>
+          <button className="btn" onClick={close}>
+            Close
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const ExpensePackageView: FC = ({}) => {
+  const { connected } = useWallet();
+  const { program } = useSlideProgram();
   const { query } = useRouter();
   const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [expenseManager, setExpenseManager] =
+    useState<ExpenseManagerItem | null>(null);
+
+  useEffect(() => {
+    async function getExpenseManagers() {
+      if (program !== undefined && !isLoading && query?.pubkey) {
+        // TODO: filter these by membership.. maybe async?
+        //   would be annoyingly slow to issue membership checks for each manager
+        //   although for a demo it's not that bad (like 2 managers)
+        const expenseManagerPubkey = new PublicKey(query.pubkey);
+        const expenseManagerAccount: ExpenseManager =
+          await program.account.expenseManager.fetch(expenseManagerPubkey);
+        setExpenseManager({
+          account: expenseManagerAccount,
+          publicKey: expenseManagerPubkey,
+        });
+      }
+    }
+    setIsLoading(true);
+    getExpenseManagers().finally(() => setIsLoading(false));
+  }, [program?.programId, query?.pubkey]);
 
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
@@ -53,21 +89,33 @@ export const ExpensePackageView: FC = ({}) => {
           <div className="hero min-h-16 p-0 pt-10">
             <div className="text-center hero-content w-full">
               <div className="w-full">
-                <div className="flex justify-between">
+                <div className="text-center">
                   <h1 className="mb-5 text-5xl">Expenses for Anmol DAO</h1>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => setOpen(true)}
-                  >
-                    Create Expense
-                  </button>
                 </div>
-                {query?.pubkey && (
-                  <ExpensePackageContent
-                    managerPubkey={new PublicKey(query.pubkey)}
-                  />
+                {!isLoading && connected && expenseManager && (
+                  <>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setOpen(true)}
+                    >
+                      Create Expense
+                    </button>
+                    <ExpensePackageContent
+                      managerPubkey={expenseManager.publicKey}
+                    />
+                    <CreateExpensePackageModal
+                      open={open}
+                      close={() => setOpen(false)}
+                      expenseManager={expenseManager}
+                    />
+                  </>
                 )}
-                <Modal open={open} close={() => setOpen(false)} />
+                {!isLoading && !connected && <PromptConnectWallet />}
+                {isLoading && (
+                  <div>
+                    <Loader />
+                  </div>
+                )}
               </div>
             </div>
           </div>

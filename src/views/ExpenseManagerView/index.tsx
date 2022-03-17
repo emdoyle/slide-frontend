@@ -76,11 +76,16 @@ const ExpenseManagerContent = () => {
   const { connected } = useWallet();
   const { program } = useSlideProgram();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [expenseManagers, setExpenseManagers] = useState<any>([]);
+  const [expenseManagers, setExpenseManagers] = useState<ExpenseManagerItem[]>(
+    []
+  );
 
   useEffect(() => {
     async function getExpenseManagers() {
       if (program !== undefined && !isLoading) {
+        // TODO: filter these by membership.. maybe async?
+        //   would be annoyingly slow to issue membership checks for each manager
+        //   although for a demo it's not that bad (like 2 managers)
         setExpenseManagers(await program.account.expenseManager.all());
       }
     }
@@ -191,11 +196,13 @@ const CreateExpenseManagerModal = ({
     if (usingSPL) {
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
         SPL_GOV_PROGRAM_ID,
+        // @ts-ignore
         realmPubkey,
         govTokenMint,
         userPublicKey
       );
       initializeManager = await program.methods
+        // @ts-ignore
         .splGovInitializeExpenseManager(realmPubkey, govAuthPubkey)
         .accounts({
           expenseManager,
