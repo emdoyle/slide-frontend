@@ -4,11 +4,16 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Loader, Nav } from "components";
 import { ExpensePackageCard } from "./ExpensePackageCard";
 import styles from "./index.module.css";
-import { PublicKey } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
 import { ExpenseManager, ExpenseManagerItem, ExpensePackageItem } from "types";
 import { useRouter } from "next/router";
+import BN from "bn.js";
+import { getExpensePackageAddressAndBump } from "@slidexyz/slide-sdk/address";
+import { SLIDE_PROGRAM_ID } from "../../constants";
+import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
+import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
 
 const CreateExpensePackageModal = ({
   open,
@@ -19,7 +24,46 @@ const CreateExpensePackageModal = ({
   close(): void;
   expenseManager: ExpenseManagerItem;
 }) => {
-  const submitForm = async () => {};
+  const { publicKey: userPublicKey } = useWallet();
+  const { program } = useSlideProgram();
+  const [name, setName] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [quantity, setQuantity] = useState<string>("");
+  const submitForm = async () => {
+    const expenseManagerAccount = expenseManager.account;
+    if (userPublicKey && program && name && quantity) {
+      const [expensePackage] = getExpensePackageAddressAndBump(
+        expenseManager.publicKey,
+        userPublicKey,
+        expenseManagerAccount.expensePackageNonce,
+        SLIDE_PROGRAM_ID
+      );
+      if (expenseManagerAccount.realm) {
+        const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+          SPL_GOV_PROGRAM_ID,
+          expenseManagerAccount.realm,
+          expenseManagerAccount.membershipTokenMint,
+          userPublicKey
+        );
+        // SPL Gov manager
+        await program.methods
+          .splGovCreateExpensePackage(
+            expenseManagerAccount.realm,
+            expenseManagerAccount.expensePackageNonce,
+            name,
+            description,
+            new BN(Number(quantity) * LAMPORTS_PER_SOL)
+          )
+          .accounts({
+            expensePackage,
+            expenseManager: expenseManager.publicKey,
+            tokenOwnerRecord,
+            owner: userPublicKey,
+          })
+          .rpc();
+      }
+    }
+  };
 
   return (
     <div className={`modal ${open && "modal-open"}`}>
@@ -30,20 +74,38 @@ const CreateExpensePackageModal = ({
             type="text"
             placeholder="For"
             className="input input-bordered w-full bg-white text-black"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
           />
           <input
             type="text"
             placeholder="Description (optional)"
             className="input input-bordered w-full bg-white text-black"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
           />
           <input
             type="number"
             placeholder="Amount (in SOL)"
             className="input input-bordered w-full bg-white text-black"
+            max={1_000_000 * LAMPORTS_PER_SOL}
+            min={0}
+            step={1 / LAMPORTS_PER_SOL}
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
           />
         </div>
         <div className="flex gap-2 mt-4 justify-center">
-          <button className="btn btn-primary">Create</button>
+          <button
+            className="btn btn-primary"
+            onClick={() =>
+              submitForm()
+                .then(() => alert("Hooray!"))
+                .catch(alert)
+            }
+          >
+            Create
+          </button>
           <button className="btn" onClick={close}>
             Close
           </button>
@@ -81,6 +143,10 @@ export const ExpensePackageView: FC = ({}) => {
     getExpenseManagers().finally(() => setIsLoading(false));
   }, [program?.programId, query?.pubkey]);
 
+  const headerText = expenseManager
+    ? `Expenses for ${expenseManager.account.name}`
+    : "Expenses";
+
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -90,7 +156,7 @@ export const ExpensePackageView: FC = ({}) => {
             <div className="text-center hero-content w-full">
               <div className="w-full">
                 <div className="text-center">
-                  <h1 className="mb-5 text-5xl">Expenses for Anmol DAO</h1>
+                  <h1 className="mb-5 text-5xl">{headerText}</h1>
                 </div>
                 {!isLoading && connected && expenseManager && (
                   <>
