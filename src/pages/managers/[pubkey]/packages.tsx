@@ -1,12 +1,12 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { ExpensePackageView } from "../views";
+import { ExpensePackageView } from "views";
 
-const Home: NextPage = (props) => {
+const ExpensePackages: NextPage = (props) => {
   return (
     <div>
       <Head>
-        <title>DAO Expense Management</title>
+        <title>Slide</title>
         <meta name="description" content="Expense packages" />
       </Head>
       <ExpensePackageView />
@@ -14,4 +14,4 @@ const Home: NextPage = (props) => {
   );
 };
 
-export default Home;
+export default ExpensePackages;

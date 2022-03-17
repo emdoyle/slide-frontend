@@ -1,6 +1,6 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { FundingView } from "../views";
+import { FundingView } from "views";
 
 const Funding: NextPage = (props) => {
   return (
