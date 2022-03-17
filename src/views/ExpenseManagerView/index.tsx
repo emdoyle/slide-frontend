@@ -1,22 +1,14 @@
-import { FC } from "react";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { FC, useEffect, useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 import { Loader, Nav } from "components";
 import { ExpenseManagerCard } from "./ExpenseManagerCard";
 import styles from "./index.module.css";
-
-const expenseManagers = [
-  { name: "Anmol DAO", id: "1" },
-  { name: "Evan DAO", id: "2" },
-];
+import { useSlideProgram } from "utils/useSlide";
+import { PromptConnectWallet } from "components/PromptConnectWallet";
+import { ExpenseManagerItem } from "types";
 
 export const ExpenseManagerView: FC = ({}) => {
-  const { connection } = useConnection();
-  const { publicKey } = useWallet();
-
-  // TODO: actually fetch expense managers for publicKey (slide SDK/anchor program)
-  const isLoading = false;
-
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -33,15 +25,7 @@ export const ExpenseManagerView: FC = ({}) => {
                     Here are some DAOs that use Slide to manage expenses
                   </p>
                 </div>
-                <div className="my-10">
-                  {isLoading ? (
-                    <div>
-                      <Loader />
-                    </div>
-                  ) : (
-                    <ExpenseManagerList expenseManagers={expenseManagers} />
-                  )}
-                </div>
+                <ExpenseManagerContent />
               </div>
             </div>
           </div>
@@ -51,16 +35,52 @@ export const ExpenseManagerView: FC = ({}) => {
   );
 };
 
+const ExpenseManagerContent = () => {
+  const { connected } = useWallet();
+  const { program } = useSlideProgram();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [expenseManagers, setExpenseManagers] = useState<any>([]);
+
+  useEffect(() => {
+    async function getExpenseManagers() {
+      if (program !== undefined && !isLoading) {
+        setExpenseManagers(await program.account.expenseManager.all());
+      }
+    }
+    setIsLoading(true);
+    getExpenseManagers().finally(() => setIsLoading(false));
+  }, [program?.programId]);
+
+  if (!connected) {
+    return <PromptConnectWallet />;
+  }
+
+  return (
+    <div className="my-10">
+      {isLoading ? (
+        <div>
+          <Loader />
+        </div>
+      ) : (
+        <ExpenseManagerList expenseManagers={expenseManagers} />
+      )}
+    </div>
+  );
+};
+
 type ExpenseManagerListProps = {
-  expenseManagers: any[];
+  expenseManagers: ExpenseManagerItem[];
   error?: Error;
 };
 
 const ExpenseManagerList = ({ expenseManagers }: ExpenseManagerListProps) => {
   return (
     <div className="flex flex-col gap-4">
-      {expenseManagers?.map((expenseManager) => (
-        <ExpenseManagerCard key={expenseManager.id} details={expenseManager} />
+      {expenseManagers.map((expenseManager) => (
+        <ExpenseManagerCard
+          key={expenseManager.publicKey.toString()}
+          expenseManager={expenseManager.account}
+        />
       ))}
     </div>
   );

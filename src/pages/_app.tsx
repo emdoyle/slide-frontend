@@ -9,10 +9,12 @@ import "../styles/globals.css";
 import "../styles/App.css";
 import { PublicKey } from "@solana/web3.js";
 
-// set custom RPC server endpoint for the final website
-// const endpoint = "https://explorer-api.devnet.solana.com";
-// const endpoint = "http://127.0.0.1:8899";
-const endpoint = "https://ssc-dao.genesysgo.net";
+// localnet
+const endpoint = "http://127.0.0.1:8899";
+// devnet
+// const endpoint = "https://api.devnet.solana.com";
+// mainnet
+// const endpoint = "https://ssc-dao.genesysgo.net";
 
 const WalletProvider = dynamic(
   () => import("../contexts/ClientWalletProvider"),

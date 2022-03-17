@@ -2,13 +2,8 @@ import { FC } from "react";
 import { Nav } from "components";
 
 import styles from "./index.module.css";
-import { useSlideProgram } from "utils/useSlide";
 
 export const HomeView: FC = ({}) => {
-  const { program } = useSlideProgram();
-  if (program) {
-    console.log("slideProgram connected! program ID: ", program.programId);
-  }
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
