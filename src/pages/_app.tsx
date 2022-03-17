@@ -10,9 +10,9 @@ import "../styles/App.css";
 import { PublicKey } from "@solana/web3.js";
 
 // localnet
-const endpoint = "http://127.0.0.1:8899";
+// const endpoint = "http://127.0.0.1:8899";
 // devnet
-// const endpoint = "https://api.devnet.solana.com";
+const endpoint = "https://api.devnet.solana.com";
 // mainnet
 // const endpoint = "https://ssc-dao.genesysgo.net";
 
@@ -30,7 +30,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         <SlideProgramProvider
           programId={
             // TODO: constant/configurable
-            new PublicKey("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS")
+            new PublicKey("3nunqfARwEnmSGg5b9aDEWuBVQHHHhztRAXR4bM4CYCE")
           }
         >
           <Component {...pageProps} />
