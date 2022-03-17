@@ -24,8 +24,6 @@ export const ExpenseManagerCard: FC<Props> = ({ expenseManager }) => {
           <h2 className="text-lg text-black">{balanceDisplay}</h2>
         </div>
         <div className="flex gap-2">
-          {/* TODO: need to pass a route parameter with the expenseManager pubkey
-                or somehow get that data into the route (long string for the URL) */}
           <Link
             href={`/managers/${expenseManager.publicKey.toString()}/packages`}
           >
@@ -35,6 +33,11 @@ export const ExpenseManagerCard: FC<Props> = ({ expenseManager }) => {
             href={`/managers/${expenseManager.publicKey.toString()}/funding`}
           >
             <button className="btn w-24">Funding</button>
+          </Link>
+          <Link
+            href={`/managers/${expenseManager.publicKey.toString()}/access`}
+          >
+            <button className="btn w-24">Access</button>
           </Link>
         </div>
       </div>
