@@ -7,8 +7,11 @@ import { useSlideProgram } from "../../utils/useSlide";
 import { PromptConnectWallet } from "../../components/PromptConnectWallet";
 import { AccessRecordItem } from "../../types";
 import { AccessRecordCard } from "./AccessRecordCard";
+import { useRouter } from "next/router";
+import { PublicKey } from "@solana/web3.js";
 
 export const AccessView: FC = ({}) => {
+  const { query } = useRouter();
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -30,7 +33,11 @@ export const AccessView: FC = ({}) => {
                   <button className="btn btn-primary">Create</button>
                 </div>
 
-                <AccessRecordContent />
+                {query?.pubkey && (
+                  <AccessRecordContent
+                    managerPubkey={new PublicKey(query.pubkey)}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -40,7 +47,11 @@ export const AccessView: FC = ({}) => {
   );
 };
 
-const AccessRecordContent = () => {
+const AccessRecordContent = ({
+  managerPubkey,
+}: {
+  managerPubkey: PublicKey;
+}) => {
   const { connected } = useWallet();
   const { program } = useSlideProgram();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -49,7 +60,12 @@ const AccessRecordContent = () => {
   useEffect(() => {
     async function getAccessRecords() {
       if (program !== undefined && !isLoading) {
-        setAccessRecords(await program.account.accessRecord.all());
+        const managerFilter = {
+          memcmp: { offset: 41, bytes: managerPubkey.toBase58() },
+        };
+        setAccessRecords(
+          await program.account.accessRecord.all([managerFilter])
+        );
       }
     }
     setIsLoading(true);
