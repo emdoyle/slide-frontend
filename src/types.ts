@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 
 export type ExpenseManager = {
   bump: number;
@@ -12,6 +13,21 @@ export type ExpenseManager = {
 
 export type ExpenseManagerItem = {
   account: ExpenseManager;
+  publicKey: PublicKey;
+};
+
+export type ExpensePackage = {
+  bump: number;
+  owner: PublicKey;
+  expenseManager: PublicKey;
+  name: string;
+  description: string;
+  state: Record<string, {}>;
+  quantity: BN;
+};
+
+export type ExpensePackageItem = {
+  account: ExpensePackage;
   publicKey: PublicKey;
 };
 

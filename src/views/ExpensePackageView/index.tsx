@@ -1,16 +1,14 @@
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useConnection } from "@solana/wallet-adapter-react";
 
-import { Nav } from "components";
+import { Loader, Nav } from "components";
 import { ExpensePackageCard } from "./ExpensePackageCard";
 import styles from "./index.module.css";
-
-const expensePackages = [
-  { name: "Coffee", id: "1", status: "pending", amount: 0.01 },
-  { name: "Lunch", id: "2", status: "approved", amount: 0.02 },
-  { name: "Desk", id: "3", status: "denied", amount: 0.1 },
-];
+import { PublicKey } from "@solana/web3.js";
+import { useSlideProgram } from "../../utils/useSlide";
+import { PromptConnectWallet } from "../../components/PromptConnectWallet";
+import { ExpensePackageItem } from "../../types";
+import { useRouter } from "next/router";
 
 const Modal = ({ open, close }: { open: boolean; close(): void }) => (
   <div className={`modal ${open && "modal-open"}`}>
@@ -44,6 +42,7 @@ const Modal = ({ open, close }: { open: boolean; close(): void }) => (
 );
 
 export const ExpensePackageView: FC = ({}) => {
+  const { query } = useRouter();
   const [open, setOpen] = useState(false);
 
   return (
@@ -63,9 +62,11 @@ export const ExpensePackageView: FC = ({}) => {
                     Create Expense
                   </button>
                 </div>
-                <div className="my-4">
-                  <ExpensePackageList expensePackages={expensePackages} />
-                </div>
+                {query?.pubkey && (
+                  <ExpensePackageContent
+                    managerPubkey={new PublicKey(query.pubkey)}
+                  />
+                )}
                 <Modal open={open} close={() => setOpen(false)} />
               </div>
             </div>
@@ -76,15 +77,61 @@ export const ExpensePackageView: FC = ({}) => {
   );
 };
 
+const ExpensePackageContent = ({
+  managerPubkey,
+}: {
+  managerPubkey: PublicKey;
+}) => {
+  const { connected } = useWallet();
+  const { program } = useSlideProgram();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [expensePackages, setExpensePackages] = useState<any>([]);
+
+  useEffect(() => {
+    async function getExpensePackages() {
+      if (program !== undefined && !isLoading) {
+        const managerFilter = {
+          memcmp: { offset: 41, bytes: managerPubkey.toBase58() },
+        };
+        setExpensePackages(
+          await program.account.expensePackage.all([managerFilter])
+        );
+      }
+    }
+    setIsLoading(true);
+    getExpensePackages().finally(() => setIsLoading(false));
+  }, [program?.programId]);
+
+  if (!connected) {
+    return <PromptConnectWallet />;
+  }
+
+  return (
+    <div className="my-10">
+      {isLoading ? (
+        <div>
+          <Loader />
+        </div>
+      ) : (
+        <ExpensePackageList expensePackages={expensePackages} />
+      )}
+    </div>
+  );
+};
+
 type ExpensePackageListProps = {
-  expensePackages: any[];
+  expensePackages: ExpensePackageItem[];
+  error?: Error;
 };
 
 const ExpensePackageList = ({ expensePackages }: ExpensePackageListProps) => {
   return (
     <div className="flex flex-col gap-4">
-      {expensePackages?.map((expensePackage) => (
-        <ExpensePackageCard key={expensePackage.id} details={expensePackage} />
+      {expensePackages.map((expensePackage) => (
+        <ExpensePackageCard
+          key={expensePackage.publicKey.toString()}
+          expensePackage={expensePackage}
+        />
       ))}
     </div>
   );
