@@ -3,6 +3,13 @@ import Link from "next/link";
 
 import { ExpenseManagerItem } from "types";
 import { useBalance } from "utils/useBalance";
+import {
+  getGovernance,
+  getNativeTreasuryAddress,
+} from "@solana/spl-governance";
+import { constants } from "@slidexyz/slide-sdk";
+import { PublicKey } from "@solana/web3.js";
+import { useConnection } from "@solana/wallet-adapter-react";
 
 type Props = {
   expenseManager: ExpenseManagerItem;

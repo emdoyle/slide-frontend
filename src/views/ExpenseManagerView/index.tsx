@@ -23,11 +23,11 @@ import {
   withCreateTokenOwnerRecord,
   withDepositGoverningTokens,
 } from "@solana/spl-governance";
-import { getExpenseManagerAddressAndBump } from "@slidexyz/slide-sdk/address";
+import { address, constants } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
 import { TOKEN_PROGRAM_ID, createAccount } from "@solana/spl-token";
 import BN from "bn.js";
+import { useRouter } from "next/router";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connection } = useConnection();
@@ -135,6 +135,7 @@ const CreateExpenseManagerModal = ({
   open: boolean;
   close(): void;
 }) => {
+  const router = useRouter();
   const { publicKey: userPublicKey } = useWallet();
   const { connection } = useConnection();
   const { program } = useSlideProgram();
@@ -180,7 +181,7 @@ const CreateExpenseManagerModal = ({
       }
       [govTokenMint] = await getSquadMintAddressAndBump(squadPubkey);
     }
-    const [expenseManager] = getExpenseManagerAddressAndBump(
+    const [expenseManager] = address.getExpenseManagerAddressAndBump(
       name,
       SLIDE_PROGRAM_ID
     );
@@ -195,7 +196,7 @@ const CreateExpenseManagerModal = ({
     let initializeManager: TransactionInstruction;
     if (usingSPL) {
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         // @ts-ignore
         realmPubkey,
         govTokenMint,
@@ -220,119 +221,71 @@ const CreateExpenseManagerModal = ({
     await program.provider.send(txn);
   };
 
-  // The code below is used to manually initialize governing tokens
-  // since it's not clear how to do so for a bespoke DAO via realms.today
-  // const initializeGoverningTokens = async () => {
-  //   if (program && userPublicKey && realm) {
-  //     const realmPubkey = new PublicKey(realm);
-  //     const govTokenMint = (await getRealm(connection, realmPubkey)).account
-  //       .communityMint;
-  //     const instructions: TransactionInstruction[] = [];
-  //     await withCreateTokenOwnerRecord(
-  //       instructions,
-  //       SPL_GOV_PROGRAM_ID,
-  //       realmPubkey,
-  //       userPublicKey,
-  //       govTokenMint,
-  //       userPublicKey
-  //     );
-  //     await withDepositGoverningTokens(
-  //       instructions,
-  //       SPL_GOV_PROGRAM_ID,
-  //       2,
-  //       realmPubkey,
-  //       new PublicKey("Gggr5PAEymFn4R2kGqKtfedc2efnnPzy8sYRT3fLvtYG"),
-  //       govTokenMint,
-  //       userPublicKey,
-  //       userPublicKey,
-  //       userPublicKey,
-  //       new BN(100)
-  //     );
-  //     const txn = new Transaction();
-  //     txn.add(...instructions);
-  //     await program.provider.send(txn);
-  //   }
-  // };
-
   // The code below is used to manually initialize a Governance and Native Treasury
   // since it's not clear how to do so for a bespoke DAO via realms.today
-  // const createGovernance = async () => {
-  //   if (program && userPublicKey && realm && name) {
-  //     const realmPubkey = new PublicKey(realm);
-  //     const [expenseManager] = getExpenseManagerAddressAndBump(
-  //       name,
-  //       SLIDE_PROGRAM_ID
-  //     );
-  //     const govTokenMint = (await getRealm(connection, realmPubkey)).account
-  //       .communityMint;
-  //     const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-  //       SPL_GOV_PROGRAM_ID,
-  //       realmPubkey,
-  //       govTokenMint,
-  //       userPublicKey
-  //     );
-  //     const instructions: TransactionInstruction[] = [];
-  //     const governance = await withCreateGovernance(
-  //       instructions,
-  //       SPL_GOV_PROGRAM_ID,
-  //       2,
-  //       realmPubkey,
-  //       expenseManager,
-  //       new GovernanceConfig({
-  //         voteThresholdPercentage: new VoteThresholdPercentage({ value: 1 }),
-  //         minCommunityTokensToCreateProposal: new BN(1),
-  //         minInstructionHoldUpTime: 0,
-  //         maxVotingTime: 100,
-  //         minCouncilTokensToCreateProposal: new BN(0),
-  //       }),
-  //       tokenOwnerRecord,
-  //       userPublicKey, // payer
-  //       userPublicKey // createAuthority
-  //     );
-  //     await withCreateNativeTreasury(
-  //       instructions,
-  //       SPL_GOV_PROGRAM_ID,
-  //       governance,
-  //       userPublicKey
-  //     );
-  //
-  //     const txn = new Transaction();
-  //     txn.add(...instructions);
-  //     await program.provider.send(txn);
-  //   }
-  // };
+  const createGovernance = async () => {
+    if (program && userPublicKey && realm && name) {
+      const realmPubkey = new PublicKey(realm);
+      const [expenseManager] = address.getExpenseManagerAddressAndBump(
+        name,
+        SLIDE_PROGRAM_ID
+      );
+      const govTokenMint = (await getRealm(connection, realmPubkey)).account
+        .communityMint;
+      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+        constants.SPL_GOV_PROGRAM_ID,
+        realmPubkey,
+        govTokenMint,
+        userPublicKey
+      );
+      const instructions: TransactionInstruction[] = [];
+      const governance = await withCreateGovernance(
+        instructions,
+        constants.SPL_GOV_PROGRAM_ID,
+        2,
+        realmPubkey,
+        expenseManager,
+        new GovernanceConfig({
+          voteThresholdPercentage: new VoteThresholdPercentage({ value: 1 }),
+          minCommunityTokensToCreateProposal: new BN(1),
+          minInstructionHoldUpTime: 0,
+          maxVotingTime: 600,
+          minCouncilTokensToCreateProposal: new BN(0),
+        }),
+        tokenOwnerRecord,
+        userPublicKey, // payer
+        userPublicKey // createAuthority
+      );
+      await withCreateNativeTreasury(
+        instructions,
+        constants.SPL_GOV_PROGRAM_ID,
+        governance,
+        userPublicKey
+      );
+
+      const txn = new Transaction();
+      txn.add(...instructions);
+      await program.provider.send(txn);
+    }
+  };
 
   return (
     <div className={`modal ${open && "modal-open"}`}>
       <div className="modal-box">
         <h3 className="font-bold text-lg">Create an expense manager</h3>
         <div className="flex flex-col gap-2 justify-center">
-          {/* The code below is used to manually initialize governing tokens */}
-          {/* since it's not clear how to do so for a bespoke DAO via realms.today */}
-          {/*{program && userPublicKey && realm && (*/}
-          {/*  <button*/}
-          {/*    className="btn btn-primary"*/}
-          {/*    onClick={() =>*/}
-          {/*      initializeGoverningTokens()*/}
-          {/*        .then(() => alert("Hooray!"))*/}
-          {/*        .catch(alert)*/}
-          {/*    }*/}
-          {/*  >*/}
-          {/*    Initialize*/}
-          {/*  </button>*/}
-          {/*)}*/}
-          {/*{program && userPublicKey && realm && name && (*/}
-          {/*  <button*/}
-          {/*    className="btn btn-primary"*/}
-          {/*    onClick={() =>*/}
-          {/*      createGovernance()*/}
-          {/*        .then(() => alert("Hooray!"))*/}
-          {/*        .catch(alert)*/}
-          {/*    }*/}
-          {/*  >*/}
-          {/*    Create*/}
-          {/*  </button>*/}
-          {/*)}*/}
+          {program && userPublicKey && realm && name && (
+            <button
+              className="btn btn-primary"
+              onClick={() =>
+                createGovernance()
+                  .then(() => router.reload())
+                  .catch(alert)
+              }
+            >
+              Initialize Governance
+            </button>
+          )}
           <input
             type="text"
             placeholder="Name"
@@ -393,7 +346,7 @@ const CreateExpenseManagerModal = ({
             className="btn btn-primary"
             onClick={() =>
               submitForm()
-                .then(() => alert("Hooray!"))
+                .then(() => router.reload())
                 .catch(alert)
             }
           >

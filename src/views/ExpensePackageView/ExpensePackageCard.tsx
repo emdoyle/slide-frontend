@@ -4,9 +4,9 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSlideProgram } from "utils/useSlide";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
-import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk/address";
+import { constants, address } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
+import { useRouter } from "next/router";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
@@ -19,6 +19,7 @@ export const ExpensePackageCard: FC<Props> = ({
   expensePackage,
   canApproveAndDeny,
 }) => {
+  const router = useRouter();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const packageData = expensePackage.account;
@@ -27,11 +28,10 @@ export const ExpensePackageCard: FC<Props> = ({
     packageData.quantity.toNumber() / LAMPORTS_PER_SOL
   ).toFixed(6);
 
-  const updatePackage = async () => {};
   const submitPackage = async () => {
     if (program && userPublicKey && managerData.realm) {
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         managerData.realm,
         managerData.membershipTokenMint,
         userPublicKey
@@ -50,12 +50,12 @@ export const ExpensePackageCard: FC<Props> = ({
   const approvePackage = async () => {
     if (program && userPublicKey && managerData.realm) {
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         managerData.realm,
         managerData.membershipTokenMint,
         userPublicKey
       );
-      const [accessRecord] = getAccessRecordAddressAndBump(
+      const [accessRecord] = address.getAccessRecordAddressAndBump(
         SLIDE_PROGRAM_ID,
         expenseManager.publicKey,
         userPublicKey
@@ -75,12 +75,12 @@ export const ExpensePackageCard: FC<Props> = ({
   const denyPackage = async () => {
     if (program && userPublicKey && managerData.realm) {
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         managerData.realm,
         managerData.membershipTokenMint,
         userPublicKey
       );
-      const [accessRecord] = getAccessRecordAddressAndBump(
+      const [accessRecord] = address.getAccessRecordAddressAndBump(
         SLIDE_PROGRAM_ID,
         expenseManager.publicKey,
         userPublicKey
@@ -122,18 +122,8 @@ export const ExpensePackageCard: FC<Props> = ({
             <button
               className="btn btn-primary w-24"
               onClick={() =>
-                updatePackage()
-                  .then(() => alert("Hooray!"))
-                  .catch(alert)
-              }
-            >
-              Update
-            </button>
-            <button
-              className="btn btn-primary w-24"
-              onClick={() =>
                 submitPackage()
-                  .then(() => alert("Hooray!"))
+                  .then(() => router.reload())
                   .catch(alert)
               }
             >
@@ -147,7 +137,7 @@ export const ExpensePackageCard: FC<Props> = ({
               className="btn btn-success w-24"
               onClick={() =>
                 approvePackage()
-                  .then(() => alert("Hooray!"))
+                  .then(() => router.reload())
                   .catch(alert)
               }
             >
@@ -157,7 +147,7 @@ export const ExpensePackageCard: FC<Props> = ({
               className="btn btn-error w-24"
               onClick={() =>
                 denyPackage()
-                  .then(() => alert("Hooray!"))
+                  .then(() => router.reload())
                   .catch(alert)
               }
             >
@@ -181,7 +171,7 @@ export const ExpensePackageCard: FC<Props> = ({
                 className="btn btn-primary w-24"
                 onClick={() =>
                   withdrawPackage()
-                    .then(() => alert("Hooray!"))
+                    .then(() => router.reload())
                     .catch(alert)
                 }
               >

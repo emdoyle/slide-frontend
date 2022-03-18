@@ -1,4 +1,4 @@
-import { Slide } from "@slidexyz/slide-sdk/types/slide";
+import { Slide } from "@slidexyz/slide-sdk";
 import { Program } from "@project-serum/anchor";
 import { createContext, useContext } from "react";
 

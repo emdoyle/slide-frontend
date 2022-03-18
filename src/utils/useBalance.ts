@@ -1,10 +1,7 @@
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
-import {
-  getAccountInfo,
-  getRentExemptBalance,
-} from "@slidexyz/slide-sdk/utils";
+import { utils } from "@slidexyz/slide-sdk";
 
 export const useBalance = (account: PublicKey | null) => {
   const { connection } = useConnection();
@@ -13,8 +10,8 @@ export const useBalance = (account: PublicKey | null) => {
   useEffect(() => {
     async function getBalance() {
       if (account) {
-        const accountInfo = await getAccountInfo(connection, account);
-        const rentExemptBalance = await getRentExemptBalance(
+        const accountInfo = await utils.getAccountInfo(connection, account);
+        const rentExemptBalance = await utils.getRentExemptBalance(
           connection,
           accountInfo
         );

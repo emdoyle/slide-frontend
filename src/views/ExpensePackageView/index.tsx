@@ -16,13 +16,9 @@ import {
 } from "types";
 import { useRouter } from "next/router";
 import BN from "bn.js";
-import {
-  getAccessRecordAddressAndBump,
-  getExpensePackageAddressAndBump,
-} from "@slidexyz/slide-sdk/address";
+import { constants, address } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
 
 const CreateExpensePackageModal = ({
   open,
@@ -33,6 +29,7 @@ const CreateExpensePackageModal = ({
   close(): void;
   expenseManager: ExpenseManagerItem;
 }) => {
+  const router = useRouter();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const [name, setName] = useState<string>("");
@@ -41,7 +38,7 @@ const CreateExpensePackageModal = ({
   const submitForm = async () => {
     const expenseManagerAccount = expenseManager.account;
     if (userPublicKey && program && name && quantity) {
-      const [expensePackage] = getExpensePackageAddressAndBump(
+      const [expensePackage] = address.getExpensePackageAddressAndBump(
         expenseManager.publicKey,
         userPublicKey,
         expenseManagerAccount.expensePackageNonce,
@@ -49,7 +46,7 @@ const CreateExpensePackageModal = ({
       );
       if (expenseManagerAccount.realm) {
         const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-          SPL_GOV_PROGRAM_ID,
+          constants.SPL_GOV_PROGRAM_ID,
           expenseManagerAccount.realm,
           expenseManagerAccount.membershipTokenMint,
           userPublicKey
@@ -109,7 +106,7 @@ const CreateExpensePackageModal = ({
             className="btn btn-primary"
             onClick={() =>
               submitForm()
-                .then(() => alert("Hooray!"))
+                .then(() => router.reload())
                 .catch(alert)
             }
           >
@@ -149,20 +146,20 @@ export const ExpensePackageView: FC = ({}) => {
           account: expenseManagerAccount,
           publicKey: expenseManagerPubkey,
         });
-        const [accessRecordPubkey] = getAccessRecordAddressAndBump(
+        const [accessRecordPubkey] = address.getAccessRecordAddressAndBump(
           SLIDE_PROGRAM_ID,
           expenseManagerPubkey,
           userPublicKey
         );
-        const accessRecordAccount = await program.account.accessRecord.fetch(
-          accessRecordPubkey
-        );
-        if (accessRecordAccount) {
+        try {
+          const accessRecordAccount = await program.account.accessRecord.fetch(
+            accessRecordPubkey
+          );
           setAccessRecord({
             account: accessRecordAccount,
             publicKey: accessRecordPubkey,
           });
-        }
+        } catch {}
       }
     }
     setIsLoading(true);

@@ -39,4 +39,4 @@ yarn-error.log*
 # pycharm
 .idea
 
-dao_member.json
+dao_member*.json

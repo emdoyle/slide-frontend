@@ -9,7 +9,7 @@ import { AccessRecordItem, ExpenseManager, ExpenseManagerItem } from "types";
 import { AccessRecordCard } from "./AccessRecordCard";
 import { useRouter } from "next/router";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk/address";
+import { address, constants, utils } from "@slidexyz/slide-sdk";
 import {
   AccountMetaData,
   getAllProposals,
@@ -21,11 +21,10 @@ import {
   withInsertTransaction,
   withSignOffProposal,
 } from "@solana/spl-governance";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
-import { flushInstructions } from "@slidexyz/slide-sdk/utils";
 
 export const AccessView: FC = ({}) => {
-  const { query } = useRouter();
+  const router = useRouter();
+  const query = router.query;
   const { connection } = useConnection();
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
@@ -55,21 +54,25 @@ export const AccessView: FC = ({}) => {
   const createAccessProposal = async () => {
     if (!program || !expenseManager || !userPublicKey) return;
     const managerData = expenseManager.account;
-    const [accessRecord] = getAccessRecordAddressAndBump(
+    const [accessRecord] = address.getAccessRecordAddressAndBump(
       program.programId,
       expenseManager.publicKey,
       userPublicKey
     );
     if (managerData.realm && managerData.governanceAuthority) {
       const proposalCount = (
-        await getAllProposals(connection, SPL_GOV_PROGRAM_ID, managerData.realm)
+        await getAllProposals(
+          connection,
+          constants.SPL_GOV_PROGRAM_ID,
+          managerData.realm
+        )
       ).length;
       const nativeTreasury = await getNativeTreasuryAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         managerData.governanceAuthority
       );
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         managerData.realm,
         managerData.membershipTokenMint,
         userPublicKey
@@ -96,7 +99,7 @@ export const AccessView: FC = ({}) => {
       let instructions: TransactionInstruction[] = [];
       const proposal = await withCreateProposal(
         instructions,
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         2,
         managerData.realm,
         managerData.governanceAuthority,
@@ -113,7 +116,7 @@ export const AccessView: FC = ({}) => {
       );
       await withInsertTransaction(
         instructions,
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         2,
         managerData.governanceAuthority,
         proposal,
@@ -129,7 +132,7 @@ export const AccessView: FC = ({}) => {
       // TODO: this may not be necessary
       await withSignOffProposal(
         instructions,
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         2,
         managerData.realm,
         managerData.governanceAuthority,
@@ -139,7 +142,7 @@ export const AccessView: FC = ({}) => {
         tokenOwnerRecord
       );
 
-      await flushInstructions(program, instructions, []);
+      await utils.flushInstructions(program, instructions, []);
     }
   };
 
@@ -168,7 +171,7 @@ export const AccessView: FC = ({}) => {
                         className="btn btn-primary"
                         onClick={() =>
                           createAccessProposal()
-                            .then(() => alert("Hooray!"))
+                            .then(() => router.reload())
                             .catch(alert)
                         }
                       >

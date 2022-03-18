@@ -6,13 +6,7 @@ import styles from "./index.module.css";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { useSlideProgram } from "../../utils/useSlide";
 import { useRouter } from "next/router";
-import {
-  AccessRecordItem,
-  ExpenseManager,
-  ExpenseManagerItem,
-} from "../../types";
-import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk/address";
-import { SLIDE_PROGRAM_ID } from "../../constants";
+import { ExpenseManager, ExpenseManagerItem } from "../../types";
 import {
   AccountMetaData,
   getAllProposals,
@@ -24,11 +18,11 @@ import {
   withInsertTransaction,
   withSignOffProposal,
 } from "@solana/spl-governance";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
-import { flushInstructions } from "@slidexyz/slide-sdk/utils";
+import { constants, utils } from "@slidexyz/slide-sdk";
 import { useBalance } from "../../utils/useBalance";
 
 export const FundingView: FC = ({}) => {
+  const router = useRouter();
   const { connection } = useConnection();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
@@ -62,14 +56,18 @@ export const FundingView: FC = ({}) => {
     const managerData = expenseManager.account;
     if (managerData.realm && managerData.governanceAuthority) {
       const proposalCount = (
-        await getAllProposals(connection, SPL_GOV_PROGRAM_ID, managerData.realm)
+        await getAllProposals(
+          connection,
+          constants.SPL_GOV_PROGRAM_ID,
+          managerData.realm
+        )
       ).length;
       const nativeTreasury = await getNativeTreasuryAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         managerData.governanceAuthority
       );
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         managerData.realm,
         managerData.membershipTokenMint,
         userPublicKey
@@ -93,7 +91,7 @@ export const FundingView: FC = ({}) => {
       let instructions: TransactionInstruction[] = [];
       const proposal = await withCreateProposal(
         instructions,
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         2,
         managerData.realm,
         managerData.governanceAuthority,
@@ -110,7 +108,7 @@ export const FundingView: FC = ({}) => {
       );
       await withInsertTransaction(
         instructions,
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         2,
         managerData.governanceAuthority,
         proposal,
@@ -126,7 +124,7 @@ export const FundingView: FC = ({}) => {
       // TODO: this may not be necessary
       await withSignOffProposal(
         instructions,
-        SPL_GOV_PROGRAM_ID,
+        constants.SPL_GOV_PROGRAM_ID,
         2,
         managerData.realm,
         managerData.governanceAuthority,
@@ -136,7 +134,7 @@ export const FundingView: FC = ({}) => {
         tokenOwnerRecord
       );
 
-      await flushInstructions(program, instructions, []);
+      await utils.flushInstructions(program, instructions, []);
     }
   };
 
@@ -184,7 +182,7 @@ export const FundingView: FC = ({}) => {
                     className="btn btn-error"
                     onClick={() =>
                       withdrawFromManager()
-                        .then(() => alert("Hooray!"))
+                        .then(() => router.reload())
                         .catch(alert)
                     }
                   >
