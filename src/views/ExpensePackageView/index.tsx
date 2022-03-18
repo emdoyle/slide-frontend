@@ -125,7 +125,7 @@ export const ExpensePackageView: FC = ({}) => {
     useState<ExpenseManagerItem | null>(null);
 
   useEffect(() => {
-    async function getExpenseManagers() {
+    async function getExpenseManager() {
       if (program !== undefined && !isLoading && query?.pubkey) {
         // TODO: filter these by membership.. maybe async?
         //   would be annoyingly slow to issue membership checks for each manager
@@ -140,7 +140,7 @@ export const ExpensePackageView: FC = ({}) => {
       }
     }
     setIsLoading(true);
-    getExpenseManagers().finally(() => setIsLoading(false));
+    getExpenseManager().finally(() => setIsLoading(false));
   }, [program?.programId, query?.pubkey]);
 
   const headerText = expenseManager
@@ -237,6 +237,8 @@ const ExpensePackageContent = ({
 type ExpensePackageListProps = {
   expenseManager: ExpenseManagerItem;
   expensePackages: ExpensePackageItem[];
+  // TODO: need to check for accessrecord for this
+  //   fetch probably returns null in this case? just need to identify it
   canApproveAndDeny?: boolean;
 };
 
