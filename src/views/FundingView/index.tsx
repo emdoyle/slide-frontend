@@ -30,7 +30,7 @@ import { useBalance } from "../../utils/useBalance";
 
 export const FundingView: FC = ({}) => {
   const { connection } = useConnection();
-  const { connected, publicKey: userPublicKey } = useWallet();
+  const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const { query } = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -161,21 +161,23 @@ export const FundingView: FC = ({}) => {
               <div className="max-w-lg">
                 <h1 className="mb-5 text-5xl">Expense Manager Funding</h1>
                 {balanceDisplay && <p className="text-xl">{balanceDisplay}</p>}
-                <div className="flex flex-col gap-2 justify-center mt-5">
-                  <p className="text-xl">
-                    Create Proposal to fund your Slide Expense Manager
-                  </p>
-                  <input
-                    type="number"
-                    placeholder="Amount (in SOL)"
-                    className="input input-bordered w-full bg-white text-black"
-                  />
-                  <button className="btn btn-primary">Create</button>
-                </div>
+                {/* This is not necessary since the realms UI has a better flow */}
+                {/* for a simple SOL transfer out */}
+                {/*<div className="flex flex-col gap-2 justify-center mt-5">*/}
+                {/*  <p className="text-xl">*/}
+                {/*    Create Proposal to fund your Slide Expense Manager*/}
+                {/*  </p>*/}
+                {/*  <input*/}
+                {/*    type="number"*/}
+                {/*    placeholder="Amount (in SOL)"*/}
+                {/*    className="input input-bordered w-full bg-white text-black"*/}
+                {/*  />*/}
+                {/*  <button className="btn btn-primary">Create</button>*/}
+                {/*</div>*/}
 
                 <div className="flex flex-col gap-2 justify-center mt-10">
                   <p className="text-xl">
-                    Create Proposal to withdraw funds from your Slide Expense
+                    Create a Proposal to withdraw funds from your Slide Expense
                     Manager
                   </p>
                   <button
