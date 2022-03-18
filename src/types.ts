@@ -24,6 +24,7 @@ export type ExpensePackage = {
   description: string;
   state: Record<string, {}>;
   quantity: BN;
+  nonce: number;
 };
 
 export type ExpensePackageItem = {

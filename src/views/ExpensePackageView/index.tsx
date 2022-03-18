@@ -166,9 +166,7 @@ export const ExpensePackageView: FC = ({}) => {
                     >
                       Create Expense
                     </button>
-                    <ExpensePackageContent
-                      managerPubkey={expenseManager.publicKey}
-                    />
+                    <ExpensePackageContent expenseManager={expenseManager} />
                     <CreateExpensePackageModal
                       open={open}
                       close={() => setOpen(false)}
@@ -192,9 +190,9 @@ export const ExpensePackageView: FC = ({}) => {
 };
 
 const ExpensePackageContent = ({
-  managerPubkey,
+  expenseManager,
 }: {
-  managerPubkey: PublicKey;
+  expenseManager: ExpenseManagerItem;
 }) => {
   const { connected } = useWallet();
   const { program } = useSlideProgram();
@@ -205,7 +203,7 @@ const ExpensePackageContent = ({
     async function getExpensePackages() {
       if (program !== undefined && !isLoading) {
         const managerFilter = {
-          memcmp: { offset: 41, bytes: managerPubkey.toBase58() },
+          memcmp: { offset: 41, bytes: expenseManager.publicKey.toBase58() },
         };
         setExpensePackages(
           await program.account.expensePackage.all([managerFilter])
@@ -227,18 +225,23 @@ const ExpensePackageContent = ({
           <Loader />
         </div>
       ) : (
-        <ExpensePackageList expensePackages={expensePackages} />
+        <ExpensePackageList
+          expenseManager={expenseManager}
+          expensePackages={expensePackages}
+        />
       )}
     </div>
   );
 };
 
 type ExpensePackageListProps = {
+  expenseManager: ExpenseManagerItem;
   expensePackages: ExpensePackageItem[];
   canApproveAndDeny?: boolean;
 };
 
 const ExpensePackageList = ({
+  expenseManager,
   expensePackages,
   canApproveAndDeny,
 }: ExpensePackageListProps) => {
@@ -247,6 +250,7 @@ const ExpensePackageList = ({
       {expensePackages.map((expensePackage) => (
         <ExpensePackageCard
           key={expensePackage.publicKey.toString()}
+          expenseManager={expenseManager}
           expensePackage={expensePackage}
           canApproveAndDeny={canApproveAndDeny}
         />
