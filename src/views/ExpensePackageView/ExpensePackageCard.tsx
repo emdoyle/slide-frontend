@@ -97,7 +97,17 @@ export const ExpensePackageCard: FC<Props> = ({
         .rpc();
     }
   };
-  const withdrawPackage = async () => {};
+  const withdrawPackage = async () => {
+    if (program && userPublicKey && managerData.realm) {
+      await program.methods
+        .withdrawFromExpensePackage(packageData.nonce)
+        .accounts({
+          expensePackage: expensePackage.publicKey,
+          owner: userPublicKey,
+        })
+        .rpc();
+    }
+  };
 
   const packageOwnedByUser =
     userPublicKey && packageData.owner.equals(userPublicKey);
@@ -155,11 +165,12 @@ export const ExpensePackageCard: FC<Props> = ({
             </button>
           </div>
         )}
-        {!canApproveAndDeny && packageData.state.pending && (
-          <button className="btn btn-primary btn-outline btn-disabled w-24">
-            Pending
-          </button>
-        )}
+        {(!canApproveAndDeny || packageOwnedByUser) &&
+          packageData.state.pending && (
+            <button className="btn btn-primary btn-outline btn-disabled w-24">
+              Pending
+            </button>
+          )}
         {packageData.state.approved && (
           <div className="flex gap-2">
             <button className="btn btn-primary btn-outline btn-disabled w-24">
@@ -182,6 +193,11 @@ export const ExpensePackageCard: FC<Props> = ({
         {packageData.state.denied && (
           <button className="btn btn-error btn-disabled btn-outline w-24">
             Denied
+          </button>
+        )}
+        {packageData.state.paid && (
+          <button className="btn btn-primary btn-outline btn-disabled w-24">
+            Paid
           </button>
         )}
       </div>
