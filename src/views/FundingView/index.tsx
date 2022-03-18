@@ -134,6 +134,7 @@ export const FundingView: FC = ({}) => {
         tokenOwnerRecord
       );
 
+      // @ts-ignore
       await utils.flushInstructions(program, instructions, []);
     }
   };

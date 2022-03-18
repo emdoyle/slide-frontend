@@ -142,6 +142,7 @@ export const AccessView: FC = ({}) => {
         tokenOwnerRecord
       );
 
+      // @ts-ignore
       await utils.flushInstructions(program, instructions, []);
     }
   };

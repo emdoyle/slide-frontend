@@ -26,6 +26,7 @@ export const SlideProgramProvider: FC<SlideProgramProviderProps> = ({
   }
 
   return (
+    // @ts-ignore
     <SlideProgramContext.Provider value={{ program: slideProgram }}>
       {children}
     </SlideProgramContext.Provider>
