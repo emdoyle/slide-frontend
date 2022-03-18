@@ -3,8 +3,8 @@ import { Loader, Nav } from "components";
 
 import styles from "./index.module.css";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useSlideProgram } from "../../utils/useSlide";
-import { PromptConnectWallet } from "../../components/PromptConnectWallet";
+import { useSlideProgram } from "utils/useSlide";
+import { PromptConnectWallet } from "components/PromptConnectWallet";
 import { AccessRecordItem, ExpenseManager, ExpenseManagerItem } from "types";
 import { AccessRecordCard } from "./AccessRecordCard";
 import { useRouter } from "next/router";

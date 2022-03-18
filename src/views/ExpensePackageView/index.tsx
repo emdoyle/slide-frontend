@@ -7,10 +7,19 @@ import styles from "./index.module.css";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
-import { ExpenseManager, ExpenseManagerItem, ExpensePackageItem } from "types";
+import {
+  AccessRecord,
+  AccessRecordItem,
+  ExpenseManager,
+  ExpenseManagerItem,
+  ExpensePackageItem,
+} from "types";
 import { useRouter } from "next/router";
 import BN from "bn.js";
-import { getExpensePackageAddressAndBump } from "@slidexyz/slide-sdk/address";
+import {
+  getAccessRecordAddressAndBump,
+  getExpensePackageAddressAndBump,
+} from "@slidexyz/slide-sdk/address";
 import { SLIDE_PROGRAM_ID } from "../../constants";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
 import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/constants";
@@ -116,17 +125,20 @@ const CreateExpensePackageModal = ({
 };
 
 export const ExpensePackageView: FC = ({}) => {
-  const { connected } = useWallet();
+  const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const { query } = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
+  const [accessRecord, setAccessRecord] = useState<AccessRecordItem | null>(
+    null
+  );
 
   useEffect(() => {
-    async function getExpenseManager() {
-      if (program !== undefined && !isLoading && query?.pubkey) {
+    async function getData() {
+      if (program && userPublicKey && !isLoading && query?.pubkey) {
         // TODO: filter these by membership.. maybe async?
         //   would be annoyingly slow to issue membership checks for each manager
         //   although for a demo it's not that bad (like 2 managers)
@@ -137,10 +149,24 @@ export const ExpensePackageView: FC = ({}) => {
           account: expenseManagerAccount,
           publicKey: expenseManagerPubkey,
         });
+        const [accessRecordPubkey] = getAccessRecordAddressAndBump(
+          SLIDE_PROGRAM_ID,
+          expenseManagerPubkey,
+          userPublicKey
+        );
+        const accessRecordAccount = await program.account.accessRecord.fetch(
+          accessRecordPubkey
+        );
+        if (accessRecordAccount) {
+          setAccessRecord({
+            account: accessRecordAccount,
+            publicKey: accessRecordPubkey,
+          });
+        }
       }
     }
     setIsLoading(true);
-    getExpenseManager().finally(() => setIsLoading(false));
+    getData().finally(() => setIsLoading(false));
   }, [program?.programId, query?.pubkey]);
 
   const headerText = expenseManager
@@ -166,7 +192,10 @@ export const ExpensePackageView: FC = ({}) => {
                     >
                       Create Expense
                     </button>
-                    <ExpensePackageContent expenseManager={expenseManager} />
+                    <ExpensePackageContent
+                      accessRecord={accessRecord}
+                      expenseManager={expenseManager}
+                    />
                     <CreateExpensePackageModal
                       open={open}
                       close={() => setOpen(false)}
@@ -190,8 +219,10 @@ export const ExpensePackageView: FC = ({}) => {
 };
 
 const ExpensePackageContent = ({
+  accessRecord,
   expenseManager,
 }: {
+  accessRecord: AccessRecordItem | null;
   expenseManager: ExpenseManagerItem;
 }) => {
   const { connected } = useWallet();
@@ -228,6 +259,7 @@ const ExpensePackageContent = ({
         <ExpensePackageList
           expenseManager={expenseManager}
           expensePackages={expensePackages}
+          canApproveAndDeny={!!accessRecord}
         />
       )}
     </div>
@@ -237,8 +269,6 @@ const ExpensePackageContent = ({
 type ExpensePackageListProps = {
   expenseManager: ExpenseManagerItem;
   expensePackages: ExpensePackageItem[];
-  // TODO: need to check for accessrecord for this
-  //   fetch probably returns null in this case? just need to identify it
   canApproveAndDeny?: boolean;
 };
 
