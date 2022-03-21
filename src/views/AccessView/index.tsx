@@ -13,6 +13,7 @@ import { address, constants, utils } from "@slidexyz/slide-sdk";
 import {
   AccountMetaData,
   getAllProposals,
+  getGovernance,
   getNativeTreasuryAddress,
   getTokenOwnerRecordAddress,
   InstructionData,
@@ -61,12 +62,8 @@ export const AccessView: FC = ({}) => {
     );
     if (managerData.realm && managerData.governanceAuthority) {
       const proposalCount = (
-        await getAllProposals(
-          connection,
-          constants.SPL_GOV_PROGRAM_ID,
-          managerData.realm
-        )
-      ).length;
+        await getGovernance(connection, managerData.governanceAuthority)
+      ).account.proposalCount;
       const nativeTreasury = await getNativeTreasuryAddress(
         constants.SPL_GOV_PROGRAM_ID,
         managerData.governanceAuthority

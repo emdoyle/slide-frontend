@@ -14,6 +14,7 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import {
+  getGovernance,
   getRealm,
   getTokenOwnerRecordAddress,
   GovernanceConfig,
@@ -135,7 +136,6 @@ const CreateExpenseManagerModal = ({
   open: boolean;
   close(): void;
 }) => {
-  const router = useRouter();
   const { publicKey: userPublicKey } = useWallet();
   const { connection } = useConnection();
   const { program } = useSlideProgram();
@@ -221,71 +221,11 @@ const CreateExpenseManagerModal = ({
     await program.provider.send(txn);
   };
 
-  // The code below is used to manually initialize a Governance and Native Treasury
-  // since it's not clear how to do so for a bespoke DAO via realms.today
-  const createGovernance = async () => {
-    if (program && userPublicKey && realm && name) {
-      const realmPubkey = new PublicKey(realm);
-      const [expenseManager] = address.getExpenseManagerAddressAndBump(
-        name,
-        SLIDE_PROGRAM_ID
-      );
-      const govTokenMint = (await getRealm(connection, realmPubkey)).account
-        .communityMint;
-      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        realmPubkey,
-        govTokenMint,
-        userPublicKey
-      );
-      const instructions: TransactionInstruction[] = [];
-      const governance = await withCreateGovernance(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        2,
-        realmPubkey,
-        expenseManager,
-        new GovernanceConfig({
-          voteThresholdPercentage: new VoteThresholdPercentage({ value: 1 }),
-          minCommunityTokensToCreateProposal: new BN(1),
-          minInstructionHoldUpTime: 0,
-          maxVotingTime: 600,
-          minCouncilTokensToCreateProposal: new BN(0),
-        }),
-        tokenOwnerRecord,
-        userPublicKey, // payer
-        userPublicKey // createAuthority
-      );
-      await withCreateNativeTreasury(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        governance,
-        userPublicKey
-      );
-
-      const txn = new Transaction();
-      txn.add(...instructions);
-      await program.provider.send(txn);
-    }
-  };
-
   return (
     <div className={`modal ${open && "modal-open"}`}>
       <div className="modal-box">
         <h3 className="font-bold text-lg">Create an expense manager</h3>
         <div className="flex flex-col gap-2 justify-center">
-          {program && userPublicKey && realm && name && (
-            <button
-              className="btn btn-primary"
-              onClick={() =>
-                createGovernance()
-                  .then(() => router.reload())
-                  .catch(alert)
-              }
-            >
-              Initialize Governance
-            </button>
-          )}
           <input
             type="text"
             placeholder="Name"
@@ -346,7 +286,10 @@ const CreateExpenseManagerModal = ({
             className="btn btn-primary"
             onClick={() =>
               submitForm()
-                .then(() => router.reload())
+                .then(() => {
+                  alert("Success");
+                  close();
+                })
                 .catch(alert)
             }
           >

@@ -160,19 +160,15 @@ export const FundingView: FC = ({}) => {
               <div className="max-w-lg">
                 <h1 className="mb-5 text-5xl">Expense Manager Funding</h1>
                 {balanceDisplay && <p className="text-xl">{balanceDisplay}</p>}
-                {/* This is not necessary since the realms UI has a better flow */}
-                {/* for a simple SOL transfer out */}
-                {/*<div className="flex flex-col gap-2 justify-center mt-5">*/}
-                {/*  <p className="text-xl">*/}
-                {/*    Create Proposal to fund your Slide Expense Manager*/}
-                {/*  </p>*/}
-                {/*  <input*/}
-                {/*    type="number"*/}
-                {/*    placeholder="Amount (in SOL)"*/}
-                {/*    className="input input-bordered w-full bg-white text-black"*/}
-                {/*  />*/}
-                {/*  <button className="btn btn-primary">Create</button>*/}
-                {/*</div>*/}
+                {expenseManager && (
+                  <div className="flex flex-col gap-2 justify-center mt-5">
+                    <p className="text-xl">
+                      Deposit funds into your Slide Expense Manager
+                    </p>
+                    <p>{expenseManager?.publicKey.toString()}</p>
+                    {/*<button className="btn btn-primary">Copy</button>*/}
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-2 justify-center mt-10">
                   <p className="text-xl">
