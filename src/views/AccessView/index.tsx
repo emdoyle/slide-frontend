@@ -8,11 +8,10 @@ import { PromptConnectWallet } from "components/PromptConnectWallet";
 import { AccessRecordItem, ExpenseManager, ExpenseManagerItem } from "types";
 import { AccessRecordCard } from "./AccessRecordCard";
 import { useRouter } from "next/router";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { address, constants, utils } from "@slidexyz/slide-sdk";
+import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { address, constants, Slide, utils } from "@slidexyz/slide-sdk";
 import {
   AccountMetaData,
-  getAllProposals,
   getGovernance,
   getNativeTreasuryAddress,
   getTokenOwnerRecordAddress,
@@ -22,6 +21,131 @@ import {
   withInsertTransaction,
   withSignOffProposal,
 } from "@solana/spl-governance";
+import { Program } from "@project-serum/anchor";
+import {
+  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  withCreateProposalAccount,
+} from "@slidexyz/squads-sdk";
+
+const createSPLAccessProposal = async (
+  program: Program<Slide>,
+  connection: Connection,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  accessRecord: PublicKey
+) => {
+  const managerData = expenseManager.account;
+  if (!managerData.realm || !managerData.governanceAuthority) {
+    alert("Manager not set up for SPL");
+    return;
+  }
+  const proposalCount = (
+    await getGovernance(connection, managerData.governanceAuthority)
+  ).account.proposalCount;
+  const nativeTreasury = await getNativeTreasuryAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.governanceAuthority
+  );
+  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.realm,
+    managerData.membershipTokenMint,
+    user
+  );
+  const instruction: TransactionInstruction = await program.methods
+    .splGovCreateAccessRecord(managerData.realm, user, {
+      reviewer: {},
+    })
+    .accounts({
+      accessRecord,
+      expenseManager: expenseManager.publicKey,
+      governanceAuthority: managerData.governanceAuthority,
+      nativeTreasury,
+    })
+    .instruction();
+  const instructionData = new InstructionData({
+    programId: program.programId,
+    accounts: instruction.keys.map((key) => new AccountMetaData({ ...key })),
+    data: instruction.data,
+  });
+  // create a proposal containing those instructions
+  let instructions: TransactionInstruction[] = [];
+  const proposal = await withCreateProposal(
+    instructions,
+    constants.SPL_GOV_PROGRAM_ID,
+    2,
+    managerData.realm,
+    managerData.governanceAuthority,
+    tokenOwnerRecord,
+    `[SLIDE] Grant Reviewer Access: ${user.toString()}`,
+    "",
+    managerData.membershipTokenMint,
+    user,
+    proposalCount,
+    new VoteType({ type: 0, choiceCount: 1 }),
+    ["Grant Access"],
+    true,
+    user
+  );
+  await withInsertTransaction(
+    instructions,
+    constants.SPL_GOV_PROGRAM_ID,
+    2,
+    managerData.governanceAuthority,
+    proposal,
+    tokenOwnerRecord,
+    user,
+    0,
+    0,
+    0,
+    [instructionData],
+    user
+  );
+  // initiate voting on the proposal
+  // TODO: this may not be necessary
+  await withSignOffProposal(
+    instructions,
+    constants.SPL_GOV_PROGRAM_ID,
+    2,
+    managerData.realm,
+    managerData.governanceAuthority,
+    proposal,
+    user,
+    undefined,
+    tokenOwnerRecord
+  );
+
+  // @ts-ignore
+  await utils.flushInstructions(program, instructions, []);
+};
+
+const createSquadsAccessProposal = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem
+) => {
+  const managerData = expenseManager.account;
+  if (!managerData.squad) {
+    alert("Manager not set up for Squads");
+    return;
+  }
+  const instructions: TransactionInstruction[] = [];
+  await withCreateProposalAccount(
+    instructions,
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    user,
+    managerData.squad,
+    1, // TODO: this requires us to pull Squad data from the chain!
+    0,
+    "Reviewer Access",
+    `[SLIDEPROPOSAL]: This grants reviewer-level access in Slide to public key ${user.toString()}`,
+    2,
+    ["Approve", "Deny"]
+  );
+
+  // @ts-ignore
+  await utils.flushInstructions(program, instructions, []);
+};
 
 export const AccessView: FC = ({}) => {
   const router = useRouter();
@@ -61,86 +185,15 @@ export const AccessView: FC = ({}) => {
       userPublicKey
     );
     if (managerData.realm && managerData.governanceAuthority) {
-      const proposalCount = (
-        await getGovernance(connection, managerData.governanceAuthority)
-      ).account.proposalCount;
-      const nativeTreasury = await getNativeTreasuryAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        managerData.governanceAuthority
-      );
-      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        managerData.realm,
-        managerData.membershipTokenMint,
-        userPublicKey
-      );
-      const instruction: TransactionInstruction = await program.methods
-        .splGovCreateAccessRecord(managerData.realm, userPublicKey, {
-          reviewer: {},
-        })
-        .accounts({
-          accessRecord,
-          expenseManager: expenseManager.publicKey,
-          governanceAuthority: managerData.governanceAuthority,
-          nativeTreasury,
-        })
-        .instruction();
-      const instructionData = new InstructionData({
-        programId: program.programId,
-        accounts: instruction.keys.map(
-          (key) => new AccountMetaData({ ...key })
-        ),
-        data: instruction.data,
-      });
-      // create a proposal containing those instructions
-      let instructions: TransactionInstruction[] = [];
-      const proposal = await withCreateProposal(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        2,
-        managerData.realm,
-        managerData.governanceAuthority,
-        tokenOwnerRecord,
-        `[SLIDE] Grant Reviewer Access: ${userPublicKey.toString()}`,
-        "",
-        managerData.membershipTokenMint,
+      await createSPLAccessProposal(
+        program,
+        connection,
         userPublicKey,
-        proposalCount,
-        new VoteType({ type: 0, choiceCount: 1 }),
-        ["Grant Access"],
-        true,
-        userPublicKey
+        expenseManager,
+        accessRecord
       );
-      await withInsertTransaction(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        2,
-        managerData.governanceAuthority,
-        proposal,
-        tokenOwnerRecord,
-        userPublicKey,
-        0,
-        0,
-        0,
-        [instructionData],
-        userPublicKey
-      );
-      // initiate voting on the proposal
-      // TODO: this may not be necessary
-      await withSignOffProposal(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        2,
-        managerData.realm,
-        managerData.governanceAuthority,
-        proposal,
-        userPublicKey,
-        undefined,
-        tokenOwnerRecord
-      );
-
-      // @ts-ignore
-      await utils.flushInstructions(program, instructions, []);
+    } else {
+      await createSquadsAccessProposal(program, userPublicKey, expenseManager);
     }
   };
 
