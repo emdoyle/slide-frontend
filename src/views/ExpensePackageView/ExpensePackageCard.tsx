@@ -1,17 +1,219 @@
 import { FC } from "react";
 import { ExpenseManagerItem, ExpensePackageItem } from "types";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSlideProgram } from "utils/useSlide";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { constants, address } from "@slidexyz/slide-sdk";
-import { SLIDE_PROGRAM_ID } from "../../constants";
+import { constants, address, Slide } from "@slidexyz/slide-sdk";
 import { useRouter } from "next/router";
+import { Program } from "@project-serum/anchor";
+import {
+  getMemberEquityAddressAndBump,
+  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+} from "@slidexyz/squads-sdk";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
   expensePackage: ExpensePackageItem;
   canApproveAndDeny?: boolean;
+};
+
+const submitSPLPackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  expensePackage: ExpensePackageItem
+) => {
+  const packageData = expensePackage.account;
+  const managerData = expenseManager.account;
+  if (!managerData.realm || !managerData.governanceAuthority) {
+    alert("Manager not setup for SPL");
+    return;
+  }
+  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.realm,
+    managerData.membershipTokenMint,
+    user
+  );
+  await program.methods
+    .splGovSubmitExpensePackage(managerData.realm, packageData.nonce)
+    .accounts({
+      expensePackage: expensePackage.publicKey,
+      expenseManager: expenseManager.publicKey,
+      tokenOwnerRecord,
+      owner: user,
+    })
+    .rpc();
+};
+
+const approveSPLPackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  expensePackage: ExpensePackageItem
+) => {
+  const packageData = expensePackage.account;
+  const managerData = expenseManager.account;
+  if (!managerData.realm || !managerData.governanceAuthority) {
+    alert("Manager not setup for SPL");
+    return;
+  }
+  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.realm,
+    managerData.membershipTokenMint,
+    user
+  );
+  const [accessRecord] = address.getAccessRecordAddressAndBump(
+    program.programId,
+    expenseManager.publicKey,
+    user
+  );
+  await program.methods
+    .splGovApproveExpensePackage(managerData.realm, packageData.nonce)
+    .accounts({
+      expensePackage: expensePackage.publicKey,
+      expenseManager: expenseManager.publicKey,
+      tokenOwnerRecord,
+      accessRecord,
+      authority: user,
+    })
+    .rpc();
+};
+
+const denySPLPackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  expensePackage: ExpensePackageItem
+) => {
+  const packageData = expensePackage.account;
+  const managerData = expenseManager.account;
+  if (!managerData.realm || !managerData.governanceAuthority) {
+    alert("Manager not setup for SPL");
+    return;
+  }
+  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.realm,
+    managerData.membershipTokenMint,
+    user
+  );
+  const [accessRecord] = address.getAccessRecordAddressAndBump(
+    program.programId,
+    expenseManager.publicKey,
+    user
+  );
+  await program.methods
+    .splGovDenyExpensePackage(managerData.realm, packageData.nonce)
+    .accounts({
+      expensePackage: expensePackage.publicKey,
+      expenseManager: expenseManager.publicKey,
+      tokenOwnerRecord,
+      accessRecord,
+      authority: user,
+    })
+    .rpc();
+};
+
+const submitSquadsPackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  expensePackage: ExpensePackageItem
+) => {
+  const packageData = expensePackage.account;
+  const managerData = expenseManager.account;
+  if (!managerData.squad) {
+    alert("Manager not setup for Squads");
+    return;
+  }
+  const [memberEquity] = await getMemberEquityAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    user,
+    managerData.squad
+  );
+  await program.methods
+    .squadsSubmitExpensePackage(packageData.nonce)
+    .accounts({
+      expensePackage: expensePackage.publicKey,
+      expenseManager: expenseManager.publicKey,
+      squad: managerData.squad,
+      memberEquity,
+      owner: user,
+    })
+    .rpc();
+};
+
+const approveSquadsPackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  expensePackage: ExpensePackageItem
+) => {
+  const packageData = expensePackage.account;
+  const managerData = expenseManager.account;
+  if (!managerData.squad) {
+    alert("Manager not setup for Squads");
+    return;
+  }
+  const [memberEquity] = await getMemberEquityAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    user,
+    managerData.squad
+  );
+  const [accessRecord] = address.getAccessRecordAddressAndBump(
+    program.programId,
+    expenseManager.publicKey,
+    user
+  );
+  await program.methods
+    .squadsApproveExpensePackage(packageData.nonce)
+    .accounts({
+      expensePackage: expensePackage.publicKey,
+      expenseManager: expenseManager.publicKey,
+      accessRecord,
+      memberEquity,
+      squad: managerData.squad,
+      authority: user,
+    })
+    .rpc();
+};
+
+const denySquadsPackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  expensePackage: ExpensePackageItem
+) => {
+  const packageData = expensePackage.account;
+  const managerData = expenseManager.account;
+  if (!managerData.squad) {
+    alert("Manager not setup for Squads");
+    return;
+  }
+  const [memberEquity] = await getMemberEquityAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    user,
+    managerData.squad
+  );
+  const [accessRecord] = address.getAccessRecordAddressAndBump(
+    program.programId,
+    expenseManager.publicKey,
+    user
+  );
+  await program.methods
+    .squadsDenyExpensePackage(packageData.nonce)
+    .accounts({
+      expensePackage: expensePackage.publicKey,
+      expenseManager: expenseManager.publicKey,
+      accessRecord,
+      memberEquity,
+      squad: managerData.squad,
+      authority: user,
+    })
+    .rpc();
 };
 
 export const ExpensePackageCard: FC<Props> = ({
@@ -29,84 +231,80 @@ export const ExpensePackageCard: FC<Props> = ({
   ).toFixed(6);
 
   const submitPackage = async () => {
-    if (program && userPublicKey && managerData.realm) {
-      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        managerData.realm,
-        managerData.membershipTokenMint,
-        userPublicKey
+    if (!program || !userPublicKey) {
+      alert("Please connect your wallet");
+      return;
+    }
+    if (managerData.realm && managerData.governanceAuthority) {
+      await submitSPLPackage(
+        program,
+        userPublicKey,
+        expenseManager,
+        expensePackage
       );
-      await program.methods
-        .splGovSubmitExpensePackage(managerData.realm, packageData.nonce)
-        .accounts({
-          expensePackage: expensePackage.publicKey,
-          expenseManager: expenseManager.publicKey,
-          tokenOwnerRecord,
-          owner: userPublicKey,
-        })
-        .rpc();
+    } else {
+      await submitSquadsPackage(
+        program,
+        userPublicKey,
+        expenseManager,
+        expensePackage
+      );
     }
   };
   const approvePackage = async () => {
-    if (program && userPublicKey && managerData.realm) {
-      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        managerData.realm,
-        managerData.membershipTokenMint,
-        userPublicKey
+    if (!program || !userPublicKey) {
+      alert("Please connect your wallet");
+      return;
+    }
+    if (managerData.realm && managerData.governanceAuthority) {
+      await approveSPLPackage(
+        program,
+        userPublicKey,
+        expenseManager,
+        expensePackage
       );
-      const [accessRecord] = address.getAccessRecordAddressAndBump(
-        SLIDE_PROGRAM_ID,
-        expenseManager.publicKey,
-        userPublicKey
+    } else {
+      await approveSquadsPackage(
+        program,
+        userPublicKey,
+        expenseManager,
+        expensePackage
       );
-      await program.methods
-        .splGovApproveExpensePackage(managerData.realm, packageData.nonce)
-        .accounts({
-          expensePackage: expensePackage.publicKey,
-          expenseManager: expenseManager.publicKey,
-          tokenOwnerRecord,
-          accessRecord,
-          authority: userPublicKey,
-        })
-        .rpc();
     }
   };
   const denyPackage = async () => {
-    if (program && userPublicKey && managerData.realm) {
-      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        managerData.realm,
-        managerData.membershipTokenMint,
-        userPublicKey
+    if (!program || !userPublicKey) {
+      alert("Please connect your wallet");
+      return;
+    }
+    if (managerData.realm && managerData.governanceAuthority) {
+      await denySPLPackage(
+        program,
+        userPublicKey,
+        expenseManager,
+        expensePackage
       );
-      const [accessRecord] = address.getAccessRecordAddressAndBump(
-        SLIDE_PROGRAM_ID,
-        expenseManager.publicKey,
-        userPublicKey
+    } else {
+      await denySquadsPackage(
+        program,
+        userPublicKey,
+        expenseManager,
+        expensePackage
       );
-      await program.methods
-        .splGovDenyExpensePackage(managerData.realm, packageData.nonce)
-        .accounts({
-          expensePackage: expensePackage.publicKey,
-          expenseManager: expenseManager.publicKey,
-          tokenOwnerRecord,
-          accessRecord,
-          authority: userPublicKey,
-        })
-        .rpc();
     }
   };
   const withdrawPackage = async () => {
-    if (program && userPublicKey && managerData.realm) {
-      await program.methods
-        .withdrawFromExpensePackage(packageData.nonce)
-        .accounts({
-          expensePackage: expensePackage.publicKey,
-          owner: userPublicKey,
-        })
-        .rpc();
+    if (!program || !userPublicKey) {
+      alert("Please connect your wallet");
+      return;
     }
+    await program.methods
+      .withdrawFromExpensePackage(packageData.nonce)
+      .accounts({
+        expensePackage: expensePackage.publicKey,
+        owner: userPublicKey,
+      })
+      .rpc();
   };
 
   const packageOwnedByUser =
