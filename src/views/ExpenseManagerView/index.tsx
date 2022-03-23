@@ -19,7 +19,31 @@ import { SLIDE_PROGRAM_ID } from "../../constants";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
+  const [expenseManagers, setExpenseManagers] = useState<ExpenseManagerItem[]>(
+    []
+  );
+  const { program } = useSlideProgram();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [open, setOpen] = useState(false);
+
+  async function fetchExpenseManagers() {
+    if (program) {
+      setIsLoading(true);
+      try {
+        // TODO: filter these by membership.. maybe async?
+        //   would be annoyingly slow to issue membership checks for each manager
+        //   although for a demo it's not that bad (like 2 managers)
+        setExpenseManagers(await program.account.expenseManager.all());
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    fetchExpenseManagers();
+  }, [program?.programId]);
+
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -44,54 +68,30 @@ export const ExpenseManagerView: FC = ({}) => {
                   </button>
                 )}
 
-                <ExpenseManagerContent />
+                {connected && isLoading ? (
+                  <div>
+                    <Loader />
+                  </div>
+                ) : (
+                  <ExpenseManagerList expenseManagers={expenseManagers} />
+                )}
+
+                {!connected && <PromptConnectWallet />}
+
                 <CreateExpenseManagerModal
                   open={open}
-                  close={() => setOpen(false)}
+                  close={(success) => {
+                    setOpen(false);
+                    if (success) {
+                      fetchExpenseManagers();
+                    }
+                  }}
                 />
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-const ExpenseManagerContent = () => {
-  const { connected } = useWallet();
-  const { program } = useSlideProgram();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [expenseManagers, setExpenseManagers] = useState<ExpenseManagerItem[]>(
-    []
-  );
-
-  useEffect(() => {
-    async function getExpenseManagers() {
-      if (program) {
-        // TODO: filter these by membership.. maybe async?
-        //   would be annoyingly slow to issue membership checks for each manager
-        //   although for a demo it's not that bad (like 2 managers)
-        setExpenseManagers(await program.account.expenseManager.all());
-      }
-    }
-    setIsLoading(true);
-    getExpenseManagers().finally(() => setIsLoading(false));
-  }, [program?.programId]);
-
-  if (!connected) {
-    return <PromptConnectWallet />;
-  }
-
-  return (
-    <div className="my-10">
-      {isLoading ? (
-        <div>
-          <Loader />
-        </div>
-      ) : (
-        <ExpenseManagerList expenseManagers={expenseManagers} />
-      )}
     </div>
   );
 };
@@ -103,7 +103,7 @@ type ExpenseManagerListProps = {
 
 const ExpenseManagerList = ({ expenseManagers }: ExpenseManagerListProps) => {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 py-5">
       {expenseManagers.map((expenseManager) => (
         <ExpenseManagerCard
           key={expenseManager.publicKey.toString()}
@@ -119,7 +119,7 @@ const CreateExpenseManagerModal = ({
   close,
 }: {
   open: boolean;
-  close(): void;
+  close: (success?: boolean) => void;
 }) => {
   const { publicKey: userPublicKey } = useWallet();
   const { connection } = useConnection();
@@ -302,7 +302,7 @@ const CreateExpenseManagerModal = ({
               submitForm()
                 .then(() => {
                   alert("Success");
-                  close();
+                  close(true);
                 })
                 .catch(console.error)
                 .finally(() => setIsLoading(false));

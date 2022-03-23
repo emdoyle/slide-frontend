@@ -16,15 +16,20 @@ import { Program } from "@project-serum/anchor";
 import { useState } from "react";
 import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 
-const createSquad = async (program: Program<Slide>, user: PublicKey) => {
+const createSquad = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  name?: string,
+  token?: string
+) => {
   const instructions: TransactionInstruction[] = [];
   const { squad } = await withCreateSquad(
     instructions,
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     user,
-    "my squad",
+    name ?? "my squad",
     "it's cool",
-    "SLIDE",
+    token ?? "SLIDE",
     60,
     40
   );
@@ -162,6 +167,8 @@ const executeWithdrawalProposal = async (
 export default function Testing() {
   const { program } = useSlideProgram();
   const { publicKey: userPublicKey } = useWallet();
+  const [name, setName] = useState<string>("");
+  const [token, setToken] = useState<string>("");
   const [proposal, setProposal] = useState<string>("");
   const [squad, setSquad] = useState<string>("");
   const [expenseManager, setExpenseManager] = useState<string>("");
@@ -170,6 +177,24 @@ export default function Testing() {
     <>
       <Nav />
       <div className="flex flex-col justify-center items-center">
+        <input
+          className="text-primary"
+          id="name-text-input"
+          type="text"
+          placeholder="Squad name"
+          onChange={(event) => setName(event.target.value)}
+          value={name}
+        />
+        <label htmlFor="squad-text-input">Name</label>
+        <input
+          className="text-primary"
+          id="token-text-input"
+          type="text"
+          placeholder="Token symbol"
+          onChange={(event) => setToken(event.target.value)}
+          value={token}
+        />
+        <label htmlFor="proposal-text-input">Token</label>
         <button
           className="btn"
           onClick={() => {
@@ -177,7 +202,7 @@ export default function Testing() {
               alert("Connect wallet");
               return;
             }
-            createSquad(program, userPublicKey);
+            createSquad(program, userPublicKey, name, token);
           }}
         >
           Create Squad
