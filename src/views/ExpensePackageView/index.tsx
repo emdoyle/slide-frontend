@@ -8,7 +8,6 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
 import {
-  AccessRecord,
   AccessRecordItem,
   ExpenseManager,
   ExpenseManagerItem,
@@ -16,9 +15,96 @@ import {
 } from "types";
 import { useRouter } from "next/router";
 import BN from "bn.js";
-import { constants, address } from "@slidexyz/slide-sdk";
-import { SLIDE_PROGRAM_ID } from "../../constants";
+import { constants, address, Slide } from "@slidexyz/slide-sdk";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
+import { Program } from "@project-serum/anchor";
+import {
+  getMemberEquityAddressAndBump,
+  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+} from "@slidexyz/squads-sdk";
+
+const createSPLExpensePackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  name: string,
+  description: string,
+  quantity: string
+) => {
+  const managerData = expenseManager.account;
+  if (!managerData.realm || !managerData.governanceAuthority) {
+    alert("Manager not set up for SPL");
+    return;
+  }
+  const [expensePackage] = address.getExpensePackageAddressAndBump(
+    expenseManager.publicKey,
+    user,
+    managerData.expensePackageNonce,
+    program.programId
+  );
+  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.realm,
+    managerData.membershipTokenMint,
+    user
+  );
+  await program.methods
+    .splGovCreateExpensePackage(
+      managerData.realm,
+      managerData.expensePackageNonce,
+      name,
+      description,
+      new BN(Number(quantity) * LAMPORTS_PER_SOL)
+    )
+    .accounts({
+      expensePackage,
+      expenseManager: expenseManager.publicKey,
+      tokenOwnerRecord,
+      owner: user,
+    })
+    .rpc();
+};
+
+const createSquadsExpensePackage = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem,
+  name: string,
+  description: string,
+  quantity: string
+) => {
+  const managerData = expenseManager.account;
+  if (!managerData.squad) {
+    alert("Manager not set up for Squads");
+    return;
+  }
+  const [expensePackage] = address.getExpensePackageAddressAndBump(
+    expenseManager.publicKey,
+    user,
+    managerData.expensePackageNonce,
+    program.programId
+  );
+  const [memberEquity] = await getMemberEquityAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    user,
+    managerData.squad
+  );
+  await program.methods
+    .squadsCreateExpensePackage(
+      managerData.expensePackageNonce,
+      name,
+      description,
+      new BN(Number(quantity) * LAMPORTS_PER_SOL)
+    )
+    .accounts({
+      expensePackage,
+      expenseManager: expenseManager.publicKey,
+      memberEquity,
+      squad: managerData.squad,
+      owner: user,
+    })
+    .rpc();
+};
 
 const CreateExpensePackageModal = ({
   open,
@@ -36,38 +122,36 @@ const CreateExpensePackageModal = ({
   const [description, setDescription] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
   const submitForm = async () => {
+    if (!userPublicKey || !program) {
+      alert("Please connect your wallet");
+      return;
+    }
+    if (!name || !quantity) {
+      alert("Name and quantity are required fields");
+      return;
+    }
     const expenseManagerAccount = expenseManager.account;
-    if (userPublicKey && program && name && quantity) {
-      const [expensePackage] = address.getExpensePackageAddressAndBump(
-        expenseManager.publicKey,
+    if (
+      expenseManagerAccount.realm &&
+      expenseManagerAccount.governanceAuthority
+    ) {
+      await createSPLExpensePackage(
+        program,
         userPublicKey,
-        expenseManagerAccount.expensePackageNonce,
-        SLIDE_PROGRAM_ID
+        expenseManager,
+        name,
+        description,
+        quantity
       );
-      if (expenseManagerAccount.realm) {
-        const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-          constants.SPL_GOV_PROGRAM_ID,
-          expenseManagerAccount.realm,
-          expenseManagerAccount.membershipTokenMint,
-          userPublicKey
-        );
-        // SPL Gov manager
-        await program.methods
-          .splGovCreateExpensePackage(
-            expenseManagerAccount.realm,
-            expenseManagerAccount.expensePackageNonce,
-            name,
-            description,
-            new BN(Number(quantity) * LAMPORTS_PER_SOL)
-          )
-          .accounts({
-            expensePackage,
-            expenseManager: expenseManager.publicKey,
-            tokenOwnerRecord,
-            owner: userPublicKey,
-          })
-          .rpc();
-      }
+    } else {
+      await createSquadsExpensePackage(
+        program,
+        userPublicKey,
+        expenseManager,
+        name,
+        description,
+        quantity
+      );
     }
   };
 
@@ -136,9 +220,6 @@ export const ExpensePackageView: FC = ({}) => {
   useEffect(() => {
     async function getData() {
       if (program && userPublicKey && !isLoading && query?.pubkey) {
-        // TODO: filter these by membership.. maybe async?
-        //   would be annoyingly slow to issue membership checks for each manager
-        //   although for a demo it's not that bad (like 2 managers)
         const expenseManagerPubkey = new PublicKey(query.pubkey);
         const expenseManagerAccount: ExpenseManager =
           await program.account.expenseManager.fetch(expenseManagerPubkey);
@@ -147,7 +228,7 @@ export const ExpensePackageView: FC = ({}) => {
           publicKey: expenseManagerPubkey,
         });
         const [accessRecordPubkey] = address.getAccessRecordAddressAndBump(
-          SLIDE_PROGRAM_ID,
+          program.programId,
           expenseManagerPubkey,
           userPublicKey
         );
