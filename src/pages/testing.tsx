@@ -1,5 +1,7 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
+  getSquadMintAddressAndBump,
+  getSquadTreasuryAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
   withAddMembersToSquad,
   withCastVote,
@@ -12,6 +14,7 @@ import BN from "bn.js";
 import { Slide, utils } from "@slidexyz/slide-sdk";
 import { Program } from "@project-serum/anchor";
 import { useState } from "react";
+import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 
 const createSquad = async (program: Program<Slide>, user: PublicKey) => {
   const instructions: TransactionInstruction[] = [];
@@ -70,11 +73,98 @@ const approveProposal = async (
   );
 };
 
+const executeAccessProposal = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  squad: string,
+  proposal: string,
+  expenseManager: string
+) => {
+  let squadPubkey;
+  let proposalPubkey;
+  let expenseManagerPubkey;
+  try {
+    squadPubkey = new PublicKey(squad);
+    proposalPubkey = new PublicKey(proposal);
+    expenseManagerPubkey = new PublicKey(expenseManager);
+  } catch {
+    alert("Invalid pubkeys");
+    return;
+  }
+  const [accessRecord] = getAccessRecordAddressAndBump(
+    program.programId,
+    expenseManagerPubkey,
+    user
+  );
+  const [squadMint] = await getSquadMintAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    squadPubkey
+  );
+  await program.methods
+    .squadsExecuteAccessProposal()
+    .accounts({
+      proposal: proposalPubkey,
+      accessRecord,
+      expenseManager: expenseManagerPubkey,
+      squad: squadPubkey,
+      squadMint,
+      member: user,
+      signer: user,
+    })
+    .rpc();
+  alert(
+    `Access Proposal: ${proposal} executed! User: ${user.toString()} should now have access`
+  );
+};
+
+const executeWithdrawalProposal = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  squad: string,
+  proposal: string,
+  expenseManager: string
+) => {
+  let squadPubkey;
+  let proposalPubkey;
+  let expenseManagerPubkey;
+  try {
+    squadPubkey = new PublicKey(squad);
+    proposalPubkey = new PublicKey(proposal);
+    expenseManagerPubkey = new PublicKey(expenseManager);
+  } catch {
+    alert("Invalid pubkeys");
+    return;
+  }
+  const [squadMint] = await getSquadMintAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    squadPubkey
+  );
+  const [squadTreasury] = await getSquadTreasuryAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    squadPubkey
+  );
+  await program.methods
+    .squadsExecuteWithdrawalProposal()
+    .accounts({
+      proposal: proposalPubkey,
+      expenseManager: expenseManagerPubkey,
+      squad: squadPubkey,
+      squadMint,
+      squadTreasury,
+      signer: user,
+    })
+    .rpc();
+  alert(
+    `Withdrawal Proposal: ${proposal} executed! ${expenseManager} should have been debited to rent-exempt minimum, crediting ${squadTreasury.toString()}`
+  );
+};
+
 export default function Testing() {
   const { program } = useSlideProgram();
   const { publicKey: userPublicKey } = useWallet();
   const [proposal, setProposal] = useState<string>("");
   const [squad, setSquad] = useState<string>("");
+  const [expenseManager, setExpenseManager] = useState<string>("");
 
   return (
     <>
@@ -95,6 +185,7 @@ export default function Testing() {
         <br />
         <br />
         <input
+          className="text-primary"
           id="squad-text-input"
           type="text"
           placeholder="Squad pubkey"
@@ -103,6 +194,7 @@ export default function Testing() {
         />
         <label htmlFor="squad-text-input">Squad</label>
         <input
+          className="text-primary"
           id="proposal-text-input"
           type="text"
           placeholder="Proposal pubkey"
@@ -121,6 +213,53 @@ export default function Testing() {
           }}
         >
           Approve Proposal
+        </button>
+        <br />
+        <br />
+        <input
+          className="text-primary"
+          id="expense-manager-text-input"
+          type="text"
+          placeholder="Expense Manager pubkey"
+          onChange={(event) => setExpenseManager(event.target.value)}
+          value={expenseManager}
+        />
+        <label htmlFor="expense-manager-text-input">Expense Manager</label>
+        <button
+          className="btn"
+          onClick={() => {
+            if (!program || !userPublicKey) {
+              alert("Connect wallet");
+              return;
+            }
+            executeAccessProposal(
+              program,
+              userPublicKey,
+              squad,
+              proposal,
+              expenseManager
+            );
+          }}
+        >
+          Execute Access Proposal
+        </button>
+        <button
+          className="btn"
+          onClick={() => {
+            if (!program || !userPublicKey) {
+              alert("Connect wallet");
+              return;
+            }
+            executeWithdrawalProposal(
+              program,
+              userPublicKey,
+              squad,
+              proposal,
+              expenseManager
+            );
+          }}
+        >
+          Execute Withdrawal Proposal
         </button>
       </div>
     </>

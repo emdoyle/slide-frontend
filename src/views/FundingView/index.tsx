@@ -135,7 +135,7 @@ const createSquadsWithdrawalProposal = async (
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     user,
     managerData.squad,
-    2, // TODO: need to pull on-chain Squad data to figure out nonce
+    3, // TODO: need to pull on-chain Squad data to figure out nonce
     0,
     "Withdrawal",
     `[SLIDEPROPOSAL]: This withdraws the balance of your Slide expense manager (${expenseManager.publicKey.toString()}) to the Squads SOL treasury`,
