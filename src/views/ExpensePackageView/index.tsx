@@ -112,7 +112,7 @@ const CreateExpensePackageModal = ({
   expenseManager,
 }: {
   open: boolean;
-  close(): void;
+  close: (success?: boolean) => void;
   expenseManager: ExpenseManagerItem;
 }) => {
   const { publicKey: userPublicKey } = useWallet();
@@ -198,7 +198,7 @@ const CreateExpensePackageModal = ({
               submitForm()
                 .then(() => {
                   alert("Success");
-                  close();
+                  close(true);
                 })
                 .catch(console.error)
                 .finally(() => setIsLoading(false));
@@ -233,10 +233,19 @@ export const ExpensePackageView: FC = ({}) => {
     null
   );
 
-  useEffect(() => {
-    async function getData() {
-      if (program && userPublicKey && !isLoading && query?.pubkey) {
-        const expenseManagerPubkey = new PublicKey(query.pubkey);
+  async function fetchData() {
+    if (program && userPublicKey && query?.pubkey) {
+      let expenseManagerPubkey;
+      try {
+        expenseManagerPubkey = new PublicKey(query.pubkey);
+      } catch {
+        alert(
+          `Could not find expense manager for this page (pubkey: ${query.pubkey})`
+        );
+        return;
+      }
+      setIsLoading(true);
+      try {
         const expenseManagerAccount: ExpenseManager =
           await program.account.expenseManager.fetch(expenseManagerPubkey);
         setExpenseManager({
@@ -248,19 +257,24 @@ export const ExpensePackageView: FC = ({}) => {
           expenseManagerPubkey,
           userPublicKey
         );
-        try {
-          const accessRecordAccount = await program.account.accessRecord.fetch(
-            accessRecordPubkey
-          );
-          setAccessRecord({
-            account: accessRecordAccount,
-            publicKey: accessRecordPubkey,
-          });
-        } catch {}
+        const accessRecordAccount = await program.account.accessRecord.fetch(
+          accessRecordPubkey
+        );
+        setAccessRecord({
+          account: accessRecordAccount,
+          publicKey: accessRecordPubkey,
+        });
+      } catch {
+        // expected behavior for accessRecord to fail if it doesn't exist
+        // TODO: differentiate manager from access record failure
+      } finally {
+        setIsLoading(false);
       }
     }
-    setIsLoading(true);
-    getData().finally(() => setIsLoading(false));
+  }
+
+  useEffect(() => {
+    fetchData();
   }, [program?.programId, query?.pubkey]);
 
   const headerText = expenseManager
@@ -292,7 +306,12 @@ export const ExpensePackageView: FC = ({}) => {
                     />
                     <CreateExpensePackageModal
                       open={open}
-                      close={() => setOpen(false)}
+                      close={(success) => {
+                        setOpen(false);
+                        if (success) {
+                          fetchData();
+                        }
+                      }}
                       expenseManager={expenseManager}
                     />
                   </>
