@@ -115,12 +115,13 @@ const CreateExpensePackageModal = ({
   close(): void;
   expenseManager: ExpenseManagerItem;
 }) => {
-  const router = useRouter();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const [name, setName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const submitForm = async () => {
     if (!userPublicKey || !program) {
       alert("Please connect your wallet");
@@ -161,6 +162,7 @@ const CreateExpensePackageModal = ({
         <h3 className="font-bold text-lg">Add a new expense</h3>
         <div className="flex flex-col gap-2 justify-center">
           <input
+            disabled={isLoading}
             type="text"
             placeholder="For"
             className="input input-bordered w-full bg-white text-black"
@@ -168,6 +170,7 @@ const CreateExpensePackageModal = ({
             onChange={(event) => setName(event.target.value)}
           />
           <input
+            disabled={isLoading}
             type="text"
             placeholder="Description (optional)"
             className="input input-bordered w-full bg-white text-black"
@@ -175,6 +178,7 @@ const CreateExpensePackageModal = ({
             onChange={(event) => setDescription(event.target.value)}
           />
           <input
+            disabled={isLoading}
             type="number"
             placeholder="Amount (in SOL)"
             className="input input-bordered w-full bg-white text-black"
@@ -187,16 +191,28 @@ const CreateExpensePackageModal = ({
         </div>
         <div className="flex gap-2 mt-4 justify-center">
           <button
+            disabled={isLoading}
             className="btn btn-primary"
-            onClick={() =>
+            onClick={() => {
+              setIsLoading(true);
               submitForm()
-                .then(() => router.reload())
-                .catch(alert)
-            }
+                .then(() => {
+                  alert("Success");
+                  close();
+                })
+                .catch(console.error)
+                .finally(() => setIsLoading(false));
+            }}
           >
             Create
           </button>
-          <button className="btn" onClick={close}>
+          <button
+            className="btn"
+            onClick={() => {
+              setIsLoading(false);
+              close();
+            }}
+          >
             Close
           </button>
         </div>
@@ -310,7 +326,7 @@ const ExpensePackageContent = ({
 
   useEffect(() => {
     async function getExpensePackages() {
-      if (program !== undefined && !isLoading) {
+      if (program) {
         const managerFilter = {
           memcmp: { offset: 41, bytes: expenseManager.publicKey.toBase58() },
         };

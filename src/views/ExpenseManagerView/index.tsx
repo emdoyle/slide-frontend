@@ -12,13 +12,9 @@ import {
   getSquadMintAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import {
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { getRealm, getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { address, constants } from "@slidexyz/slide-sdk";
+import { address, constants, utils } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
 
 export const ExpenseManagerView: FC = ({}) => {
@@ -72,7 +68,7 @@ const ExpenseManagerContent = () => {
 
   useEffect(() => {
     async function getExpenseManagers() {
-      if (program !== undefined && !isLoading) {
+      if (program) {
         // TODO: filter these by membership.. maybe async?
         //   would be annoyingly slow to issue membership checks for each manager
         //   although for a demo it's not that bad (like 2 managers)
@@ -133,6 +129,7 @@ const CreateExpenseManagerModal = ({
   const [realm, setRealm] = useState<string>("");
   const [govAuthority, setGovAuthority] = useState<string>("");
   const [squad, setSquad] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const submitForm = async () => {
     if (!program) {
@@ -221,9 +218,13 @@ const CreateExpenseManagerModal = ({
         })
         .instruction();
     }
-    const txn = new Transaction();
-    txn.add(createManager, initializeManager);
-    await program.provider.send(txn);
+
+    await utils.flushInstructions(
+      // @ts-ignore
+      program,
+      [createManager, initializeManager],
+      []
+    );
   };
 
   return (
@@ -232,6 +233,7 @@ const CreateExpenseManagerModal = ({
         <h3 className="font-bold text-lg">Create an expense manager</h3>
         <div className="flex flex-col gap-2 justify-center">
           <input
+            disabled={isLoading}
             type="text"
             placeholder="Name"
             className="input input-bordered w-full bg-white text-black"
@@ -240,6 +242,7 @@ const CreateExpenseManagerModal = ({
           />
           <div className="flex justify-center items-center px-4">
             <input
+              disabled={isLoading}
               type="radio"
               className=""
               name="daoProvider"
@@ -249,6 +252,7 @@ const CreateExpenseManagerModal = ({
             />
             <label htmlFor="radioSPL">SPL Governance</label>
             <input
+              disabled={isLoading}
               type="radio"
               className=""
               name="daoProvider"
@@ -261,6 +265,7 @@ const CreateExpenseManagerModal = ({
           {usingSPL && (
             <>
               <input
+                disabled={isLoading}
                 type="text"
                 placeholder="Realm Pubkey"
                 className="input input-bordered w-full bg-white text-black"
@@ -268,6 +273,7 @@ const CreateExpenseManagerModal = ({
                 onChange={(event) => setRealm(event.target.value)}
               />
               <input
+                disabled={isLoading}
                 type="text"
                 placeholder="Governance Pubkey"
                 className="input input-bordered w-full bg-white text-black"
@@ -278,6 +284,7 @@ const CreateExpenseManagerModal = ({
           )}
           {!usingSPL && (
             <input
+              disabled={isLoading}
               type="text"
               placeholder="Squads Pubkey"
               className="input input-bordered w-full bg-white text-black"
@@ -288,19 +295,28 @@ const CreateExpenseManagerModal = ({
         </div>
         <div className="flex gap-2 mt-4 justify-center">
           <button
+            disabled={isLoading}
             className="btn btn-primary"
-            onClick={() =>
+            onClick={() => {
+              setIsLoading(true);
               submitForm()
                 .then(() => {
                   alert("Success");
                   close();
                 })
-                .catch(alert)
-            }
+                .catch(console.error)
+                .finally(() => setIsLoading(false));
+            }}
           >
             Create
           </button>
-          <button className="btn" onClick={close}>
+          <button
+            className="btn"
+            onClick={() => {
+              setIsLoading(false);
+              close();
+            }}
+          >
             Close
           </button>
         </div>

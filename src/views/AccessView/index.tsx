@@ -154,15 +154,13 @@ export const AccessView: FC = ({}) => {
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [proposalLoading, setProposalLoading] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
 
   useEffect(() => {
     async function getExpenseManager() {
-      if (program !== undefined && !isLoading && query?.pubkey) {
-        // TODO: filter these by membership.. maybe async?
-        //   would be annoyingly slow to issue membership checks for each manager
-        //   although for a demo it's not that bad (like 2 managers)
+      if (program && query?.pubkey) {
         const expenseManagerPubkey = new PublicKey(query.pubkey);
         const expenseManagerAccount: ExpenseManager =
           await program.account.expenseManager.fetch(expenseManagerPubkey);
@@ -211,7 +209,7 @@ export const AccessView: FC = ({}) => {
                   View who can approve and deny expenses
                 </p>
 
-                {connected && query?.pubkey && (
+                {connected && !isLoading && query?.pubkey && (
                   <>
                     <div className="flex flex-col gap-2 justify-center mt-5">
                       <p className="text-xl">
@@ -219,12 +217,15 @@ export const AccessView: FC = ({}) => {
                         &apos;Reviewer&apos; access
                       </p>
                       <button
+                        disabled={proposalLoading}
                         className="btn btn-primary"
-                        onClick={() =>
+                        onClick={() => {
+                          setProposalLoading(true);
                           createAccessProposal()
-                            .then(() => router.reload())
-                            .catch(alert)
-                        }
+                            .then(() => alert("Success"))
+                            .catch(console.error)
+                            .finally(() => setProposalLoading(false));
+                        }}
                       >
                         Create
                       </button>
@@ -233,6 +234,11 @@ export const AccessView: FC = ({}) => {
                       managerPubkey={new PublicKey(query.pubkey)}
                     />
                   </>
+                )}
+                {connected && isLoading && (
+                  <div>
+                    <Loader />
+                  </div>
                 )}
                 {!connected && <PromptConnectWallet />}
               </div>
@@ -255,7 +261,7 @@ const AccessRecordContent = ({
 
   useEffect(() => {
     async function getAccessRecords() {
-      if (program !== undefined && !isLoading) {
+      if (program) {
         const managerFilter = {
           memcmp: { offset: 41, bytes: managerPubkey.toBase58() },
         };

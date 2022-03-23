@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Nav } from "components";
+import { Loader, Nav } from "components";
 
 import styles from "./index.module.css";
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
@@ -156,12 +156,13 @@ export const FundingView: FC = ({}) => {
   const { program } = useSlideProgram();
   const { query } = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [withdrawLoading, setWithdrawLoading] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
 
   useEffect(() => {
     async function getExpenseManager() {
-      if (program && userPublicKey && !isLoading && query?.pubkey) {
+      if (program && userPublicKey && query?.pubkey) {
         const expenseManagerPubkey = new PublicKey(query.pubkey);
         const expenseManagerAccount: ExpenseManager =
           await program.account.expenseManager.fetch(expenseManagerPubkey);
@@ -217,13 +218,20 @@ export const FundingView: FC = ({}) => {
             <div className="text-center hero-content">
               <div className="max-w-lg">
                 <h1 className="mb-5 text-5xl">Expense Manager Funding</h1>
-                {balanceDisplay && <p className="text-xl">{balanceDisplay}</p>}
-                {connected && expenseManager && (
+                {isLoading && (
+                  <div>
+                    <Loader />
+                  </div>
+                )}
+                {!isLoading && balanceDisplay && (
+                  <p className="text-xl">{balanceDisplay}</p>
+                )}
+                {connected && !isLoading && expenseManager && (
                   <div className="flex flex-col gap-2 justify-center mt-5">
                     <p className="text-xl">
                       Deposit funds into your Slide Expense Manager
                     </p>
-                    <p>{expenseManager?.publicKey.toString()}</p>
+                    <p>{expenseManager.publicKey.toString()}</p>
                     {/*<button className="btn btn-primary">Copy</button>*/}
                   </div>
                 )}
@@ -235,15 +243,25 @@ export const FundingView: FC = ({}) => {
                       Expense Manager
                     </p>
                     <button
+                      disabled={withdrawLoading}
                       className="btn btn-error"
-                      onClick={() =>
+                      onClick={() => {
+                        setWithdrawLoading(true);
                         withdrawFromManager()
-                          .then(() => router.reload())
-                          .catch(alert)
-                      }
+                          .then(() => {
+                            alert("Success");
+                          })
+                          .catch(console.error)
+                          .finally(() => setWithdrawLoading(false));
+                      }}
                     >
                       Withdraw
                     </button>
+                    {withdrawLoading && (
+                      <div>
+                        <Loader />
+                      </div>
+                    )}
                   </div>
                 )}
                 {!connected && <PromptConnectWallet />}
