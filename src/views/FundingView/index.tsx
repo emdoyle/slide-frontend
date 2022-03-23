@@ -3,7 +3,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Nav } from "components";
 
 import styles from "./index.module.css";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { useSlideProgram } from "../../utils/useSlide";
 import { useRouter } from "next/router";
 import { ExpenseManager, ExpenseManagerItem } from "../../types";
@@ -18,13 +18,141 @@ import {
   withInsertTransaction,
   withSignOffProposal,
 } from "@solana/spl-governance";
-import { constants, utils } from "@slidexyz/slide-sdk";
+import { constants, Slide, utils } from "@slidexyz/slide-sdk";
 import { useBalance } from "../../utils/useBalance";
+import { Program } from "@project-serum/anchor";
+import {
+  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  withCreateProposalAccount,
+} from "@slidexyz/squads-sdk";
+import { PromptConnectWallet } from "../../components/PromptConnectWallet";
+
+const createSPLWithdrawalProposal = async (
+  program: Program<Slide>,
+  connection: Connection,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem
+) => {
+  const managerData = expenseManager.account;
+  if (!managerData.realm || !managerData.governanceAuthority) {
+    alert("Manager not set up for SPL");
+    return;
+  }
+  const proposalCount = (
+    await getAllProposals(
+      connection,
+      constants.SPL_GOV_PROGRAM_ID,
+      managerData.realm
+    )
+  ).length;
+  const nativeTreasury = await getNativeTreasuryAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.governanceAuthority
+  );
+  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
+    constants.SPL_GOV_PROGRAM_ID,
+    managerData.realm,
+    managerData.membershipTokenMint,
+    user
+  );
+  const instruction: TransactionInstruction = await program.methods
+    .splGovWithdrawFromExpenseManager(managerData.realm)
+    .accounts({
+      expenseManager: expenseManager.publicKey,
+      governanceAuthority: managerData.governanceAuthority,
+      nativeTreasury,
+    })
+    .instruction();
+  const instructionData = new InstructionData({
+    programId: program.programId,
+    accounts: instruction.keys.map((key) => new AccountMetaData({ ...key })),
+    data: instruction.data,
+  });
+  // create a proposal containing those instructions
+  let instructions: TransactionInstruction[] = [];
+  const proposal = await withCreateProposal(
+    instructions,
+    constants.SPL_GOV_PROGRAM_ID,
+    2,
+    managerData.realm,
+    managerData.governanceAuthority,
+    tokenOwnerRecord,
+    `[SLIDE] Withdraw all funds from expense manager ${expenseManager.publicKey.toString()}`,
+    "",
+    managerData.membershipTokenMint,
+    user,
+    proposalCount,
+    new VoteType({ type: 0, choiceCount: 1 }),
+    ["Withdraw"],
+    true,
+    user
+  );
+  await withInsertTransaction(
+    instructions,
+    constants.SPL_GOV_PROGRAM_ID,
+    2,
+    managerData.governanceAuthority,
+    proposal,
+    tokenOwnerRecord,
+    user,
+    0,
+    0,
+    0,
+    [instructionData],
+    user
+  );
+  // initiate voting on the proposal
+  // TODO: this may not be necessary
+  await withSignOffProposal(
+    instructions,
+    constants.SPL_GOV_PROGRAM_ID,
+    2,
+    managerData.realm,
+    managerData.governanceAuthority,
+    proposal,
+    user,
+    undefined,
+    tokenOwnerRecord
+  );
+
+  // @ts-ignore
+  await utils.flushInstructions(program, instructions, []);
+};
+
+const createSquadsWithdrawalProposal = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  expenseManager: ExpenseManagerItem
+) => {
+  const managerData = expenseManager.account;
+  if (!managerData.squad) {
+    alert("Manager is not setup for Squads");
+    return;
+  }
+  const instructions: TransactionInstruction[] = [];
+  const { proposal } = await withCreateProposalAccount(
+    instructions,
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    user,
+    managerData.squad,
+    2, // TODO: need to pull on-chain Squad data to figure out nonce
+    0,
+    "Withdrawal",
+    `[SLIDEPROPOSAL]: This withdraws the balance of your Slide expense manager (${expenseManager.publicKey.toString()}) to the Squads SOL treasury`,
+    2,
+    ["Approve", "Deny"]
+  );
+
+  // @ts-ignore
+  await utils.flushInstructions(program, instructions, []);
+
+  alert(`Created proposal: ${proposal.toString()}`);
+};
 
 export const FundingView: FC = ({}) => {
   const router = useRouter();
   const { connection } = useConnection();
-  const { publicKey: userPublicKey } = useWallet();
+  const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const { query } = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -34,9 +162,6 @@ export const FundingView: FC = ({}) => {
   useEffect(() => {
     async function getExpenseManager() {
       if (program && userPublicKey && !isLoading && query?.pubkey) {
-        // TODO: filter these by membership.. maybe async?
-        //   would be annoyingly slow to issue membership checks for each manager
-        //   although for a demo it's not that bad (like 2 managers)
         const expenseManagerPubkey = new PublicKey(query.pubkey);
         const expenseManagerAccount: ExpenseManager =
           await program.account.expenseManager.fetch(expenseManagerPubkey);
@@ -51,91 +176,24 @@ export const FundingView: FC = ({}) => {
   }, [program?.programId, query?.pubkey]);
 
   const withdrawFromManager = async () => {
-    if (!program || !expenseManager || !userPublicKey) return;
-    // generate instructions for withdrawal
+    if (!program || !expenseManager || !userPublicKey) {
+      alert("Please connect your wallet");
+      return;
+    }
     const managerData = expenseManager.account;
     if (managerData.realm && managerData.governanceAuthority) {
-      const proposalCount = (
-        await getAllProposals(
-          connection,
-          constants.SPL_GOV_PROGRAM_ID,
-          managerData.realm
-        )
-      ).length;
-      const nativeTreasury = await getNativeTreasuryAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        managerData.governanceAuthority
-      );
-      const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        managerData.realm,
-        managerData.membershipTokenMint,
-        userPublicKey
-      );
-      const instruction: TransactionInstruction = await program.methods
-        .splGovWithdrawFromExpenseManager(managerData.realm)
-        .accounts({
-          expenseManager: expenseManager.publicKey,
-          governanceAuthority: managerData.governanceAuthority,
-          nativeTreasury,
-        })
-        .instruction();
-      const instructionData = new InstructionData({
-        programId: program.programId,
-        accounts: instruction.keys.map(
-          (key) => new AccountMetaData({ ...key })
-        ),
-        data: instruction.data,
-      });
-      // create a proposal containing those instructions
-      let instructions: TransactionInstruction[] = [];
-      const proposal = await withCreateProposal(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        2,
-        managerData.realm,
-        managerData.governanceAuthority,
-        tokenOwnerRecord,
-        `[SLIDE] Withdraw all funds from expense manager ${expenseManager.publicKey.toString()}`,
-        "",
-        managerData.membershipTokenMint,
+      await createSPLWithdrawalProposal(
+        program,
+        connection,
         userPublicKey,
-        proposalCount,
-        new VoteType({ type: 0, choiceCount: 1 }),
-        ["Withdraw"],
-        true,
-        userPublicKey
+        expenseManager
       );
-      await withInsertTransaction(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        2,
-        managerData.governanceAuthority,
-        proposal,
-        tokenOwnerRecord,
+    } else {
+      await createSquadsWithdrawalProposal(
+        program,
         userPublicKey,
-        0,
-        0,
-        0,
-        [instructionData],
-        userPublicKey
+        expenseManager
       );
-      // initiate voting on the proposal
-      // TODO: this may not be necessary
-      await withSignOffProposal(
-        instructions,
-        constants.SPL_GOV_PROGRAM_ID,
-        2,
-        managerData.realm,
-        managerData.governanceAuthority,
-        proposal,
-        userPublicKey,
-        undefined,
-        tokenOwnerRecord
-      );
-
-      // @ts-ignore
-      await utils.flushInstructions(program, instructions, []);
     }
   };
 
@@ -160,7 +218,7 @@ export const FundingView: FC = ({}) => {
               <div className="max-w-lg">
                 <h1 className="mb-5 text-5xl">Expense Manager Funding</h1>
                 {balanceDisplay && <p className="text-xl">{balanceDisplay}</p>}
-                {expenseManager && (
+                {connected && expenseManager && (
                   <div className="flex flex-col gap-2 justify-center mt-5">
                     <p className="text-xl">
                       Deposit funds into your Slide Expense Manager
@@ -170,22 +228,25 @@ export const FundingView: FC = ({}) => {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-2 justify-center mt-10">
-                  <p className="text-xl">
-                    Create a Proposal to withdraw funds from your Slide Expense
-                    Manager
-                  </p>
-                  <button
-                    className="btn btn-error"
-                    onClick={() =>
-                      withdrawFromManager()
-                        .then(() => router.reload())
-                        .catch(alert)
-                    }
-                  >
-                    Withdraw
-                  </button>
-                </div>
+                {connected && (
+                  <div className="flex flex-col gap-2 justify-center mt-10">
+                    <p className="text-xl">
+                      Create a Proposal to withdraw funds from your Slide
+                      Expense Manager
+                    </p>
+                    <button
+                      className="btn btn-error"
+                      onClick={() =>
+                        withdrawFromManager()
+                          .then(() => router.reload())
+                          .catch(alert)
+                      }
+                    >
+                      Withdraw
+                    </button>
+                  </div>
+                )}
+                {!connected && <PromptConnectWallet />}
               </div>
             </div>
           </div>
