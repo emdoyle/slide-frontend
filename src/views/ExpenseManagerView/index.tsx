@@ -7,33 +7,22 @@ import styles from "./index.module.css";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
 import { ExpenseManagerItem } from "types";
-import { getSquadMintAddressAndBump } from "@slidexyz/squads-sdk";
+import {
+  getMemberEquityAddressAndBump,
+  getSquadMintAddressAndBump,
+  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+} from "@slidexyz/squads-sdk";
 import {
   PublicKey,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import {
-  getGovernance,
-  getRealm,
-  getTokenOwnerRecordAddress,
-  GovernanceConfig,
-  VoteThresholdPercentage,
-  withCreateGovernance,
-  withCreateNativeTreasury,
-  withCreateTokenOwnerRecord,
-  withDepositGoverningTokens,
-} from "@solana/spl-governance";
+import { getRealm, getTokenOwnerRecordAddress } from "@solana/spl-governance";
 import { address, constants } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
-import { TOKEN_PROGRAM_ID, createAccount } from "@solana/spl-token";
-import BN from "bn.js";
-import { useRouter } from "next/router";
 
 export const ExpenseManagerView: FC = ({}) => {
-  const { connection } = useConnection();
-  const { program } = useSlideProgram();
-  const { connected, publicKey: userPublicKey } = useWallet();
+  const { connected } = useWallet();
   const [open, setOpen] = useState(false);
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
@@ -179,7 +168,10 @@ const CreateExpenseManagerModal = ({
         alert("Could not parse Public Keys, please check they are correct.");
         return;
       }
-      [govTokenMint] = await getSquadMintAddressAndBump(squadPubkey);
+      [govTokenMint] = await getSquadMintAddressAndBump(
+        SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+        squadPubkey
+      );
     }
     const [expenseManager] = address.getExpenseManagerAddressAndBump(
       name,
@@ -213,8 +205,21 @@ const CreateExpenseManagerModal = ({
         })
         .instruction();
     } else {
-      alert("TODO");
-      return;
+      const [memberEquityRecord] = await getMemberEquityAddressAndBump(
+        SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+        // @ts-ignore
+        userPublicKey,
+        squadPubkey
+      );
+      initializeManager = await program.methods
+        .squadsInitializeExpenseManager()
+        .accounts({
+          expenseManager,
+          memberEquity: memberEquityRecord,
+          squad: squadPubkey,
+          member: userPublicKey,
+        })
+        .instruction();
     }
     const txn = new Transaction();
     txn.add(createManager, initializeManager);
