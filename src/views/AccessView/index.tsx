@@ -26,6 +26,7 @@ import {
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
+import { useAlert } from "react-alert";
 
 const createSPLAccessProposal = async (
   program: Program<Slide>,
@@ -33,11 +34,10 @@ const createSPLAccessProposal = async (
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   accessRecord: PublicKey
-) => {
+): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    alert("Manager not set up for SPL");
-    return;
+    return "Manager not set up for SPL";
   }
   const proposalCount = (
     await getGovernance(connection, managerData.governanceAuthority)
@@ -123,11 +123,10 @@ const createSquadsAccessProposal = async (
   program: Program<Slide>,
   user: PublicKey,
   expenseManager: ExpenseManagerItem
-) => {
+): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    alert("Manager not set up for Squads");
-    return;
+    return "Manager not set up for Squads";
   }
   const instructions: TransactionInstruction[] = [];
   await withCreateProposalAccount(
@@ -148,6 +147,7 @@ const createSquadsAccessProposal = async (
 };
 
 export const AccessView: FC = ({}) => {
+  const Alert = useAlert();
   const router = useRouter();
   const query = router.query;
   const { connection } = useConnection();
@@ -177,13 +177,14 @@ export const AccessView: FC = ({}) => {
   const createAccessProposal = async () => {
     if (!program || !expenseManager || !userPublicKey) return;
     const managerData = expenseManager.account;
+    let alertText;
     const [accessRecord] = address.getAccessRecordAddressAndBump(
       program.programId,
       expenseManager.publicKey,
       userPublicKey
     );
     if (managerData.realm && managerData.governanceAuthority) {
-      await createSPLAccessProposal(
+      alertText = await createSPLAccessProposal(
         program,
         connection,
         userPublicKey,
@@ -191,7 +192,14 @@ export const AccessView: FC = ({}) => {
         accessRecord
       );
     } else {
-      await createSquadsAccessProposal(program, userPublicKey, expenseManager);
+      alertText = await createSquadsAccessProposal(
+        program,
+        userPublicKey,
+        expenseManager
+      );
+    }
+    if (alertText) {
+      Alert.show(alertText);
     }
   };
 
@@ -222,8 +230,8 @@ export const AccessView: FC = ({}) => {
                         onClick={() => {
                           setProposalLoading(true);
                           createAccessProposal()
-                            .then(() => alert("Success"))
-                            .catch(console.error)
+                            .then(() => Alert.show("Success"))
+                            .catch((err) => Alert.error(err.message))
                             .finally(() => setProposalLoading(false));
                         }}
                       >

@@ -16,6 +16,7 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { getRealm, getTokenOwnerRecordAddress } from "@solana/spl-governance";
 import { address, constants, utils } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
+import { useAlert } from "react-alert";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -121,6 +122,7 @@ const CreateExpenseManagerModal = ({
   open: boolean;
   close: (success?: boolean) => void;
 }) => {
+  const Alert = useAlert();
   const { publicKey: userPublicKey } = useWallet();
   const { connection } = useConnection();
   const { program } = useSlideProgram();
@@ -133,7 +135,7 @@ const CreateExpenseManagerModal = ({
 
   const submitForm = async () => {
     if (!program) {
-      alert("Please connect your wallet to submit this form.");
+      Alert.show("Please connect your wallet to submit this form.");
       return;
     }
     let realmPubkey;
@@ -147,7 +149,7 @@ const CreateExpenseManagerModal = ({
         squadPubkey = new PublicKey(squad);
       }
     } catch (e) {
-      alert("Could not parse Public Keys, please check they are correct.");
+      Alert.show("Could not parse Public Keys, please check they are correct.");
       return;
     }
 
@@ -155,14 +157,18 @@ const CreateExpenseManagerModal = ({
     if (usingSPL) {
       // get the mint from the realm (communityMint)
       if (!realmPubkey || !govAuthPubkey) {
-        alert("Could not parse Public Keys, please check they are correct.");
+        Alert.show(
+          "Could not parse Public Keys, please check they are correct."
+        );
         return;
       }
       govTokenMint = (await getRealm(connection, realmPubkey)).account
         .communityMint;
     } else {
       if (!squadPubkey) {
-        alert("Could not parse Public Keys, please check they are correct.");
+        Alert.show(
+          "Could not parse Public Keys, please check they are correct."
+        );
         return;
       }
       [govTokenMint] = await getSquadMintAddressAndBump(
@@ -301,7 +307,7 @@ const CreateExpenseManagerModal = ({
               setIsLoading(true);
               submitForm()
                 .then(() => {
-                  alert("Success");
+                  Alert.show("Success");
                   close(true);
                 })
                 .catch(console.error)

@@ -11,6 +11,7 @@ import {
   AccessRecordItem,
   ExpenseManager,
   ExpenseManagerItem,
+  ExpensePackage,
   ExpensePackageItem,
 } from "types";
 import { useRouter } from "next/router";
@@ -22,6 +23,7 @@ import {
   getMemberEquityAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
+import { useAlert } from "react-alert";
 
 const createSPLExpensePackage = async (
   program: Program<Slide>,
@@ -30,11 +32,10 @@ const createSPLExpensePackage = async (
   name: string,
   description: string,
   quantity: string
-) => {
+): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    alert("Manager not set up for SPL");
-    return;
+    return "Manager not set up for SPL";
   }
   const [expensePackage] = address.getExpensePackageAddressAndBump(
     expenseManager.publicKey,
@@ -72,11 +73,10 @@ const createSquadsExpensePackage = async (
   name: string,
   description: string,
   quantity: string
-) => {
+): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    alert("Manager not set up for Squads");
-    return;
+    return "Manager not set up for Squads";
   }
   const [expensePackage] = address.getExpensePackageAddressAndBump(
     expenseManager.publicKey,
@@ -115,6 +115,7 @@ const CreateExpensePackageModal = ({
   close: (success?: boolean) => void;
   expenseManager: ExpenseManagerItem;
 }) => {
+  const Alert = useAlert();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const [name, setName] = useState<string>("");
@@ -124,19 +125,20 @@ const CreateExpensePackageModal = ({
 
   const submitForm = async () => {
     if (!userPublicKey || !program) {
-      alert("Please connect your wallet");
+      Alert.show("Please connect your wallet");
       return;
     }
     if (!name || !quantity) {
-      alert("Name and quantity are required fields");
+      Alert.show("Name and quantity are required fields");
       return;
     }
     const expenseManagerAccount = expenseManager.account;
+    let alertText;
     if (
       expenseManagerAccount.realm &&
       expenseManagerAccount.governanceAuthority
     ) {
-      await createSPLExpensePackage(
+      alertText = await createSPLExpensePackage(
         program,
         userPublicKey,
         expenseManager,
@@ -145,7 +147,7 @@ const CreateExpensePackageModal = ({
         quantity
       );
     } else {
-      await createSquadsExpensePackage(
+      alertText = await createSquadsExpensePackage(
         program,
         userPublicKey,
         expenseManager,
@@ -153,6 +155,9 @@ const CreateExpensePackageModal = ({
         description,
         quantity
       );
+    }
+    if (alertText) {
+      Alert.show(alertText);
     }
   };
 
@@ -197,7 +202,7 @@ const CreateExpensePackageModal = ({
               setIsLoading(true);
               submitForm()
                 .then(() => {
-                  alert("Success");
+                  Alert.show("Success");
                   close(true);
                 })
                 .catch(console.error)
@@ -222,6 +227,7 @@ const CreateExpensePackageModal = ({
 };
 
 export const ExpensePackageView: FC = ({}) => {
+  const Alert = useAlert();
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const { query } = useRouter();
@@ -239,7 +245,7 @@ export const ExpensePackageView: FC = ({}) => {
       try {
         expenseManagerPubkey = new PublicKey(query.pubkey);
       } catch {
-        alert(
+        Alert.show(
           `Could not find expense manager for this page (pubkey: ${query.pubkey})`
         );
         return;
@@ -341,7 +347,28 @@ const ExpensePackageContent = ({
   const { connected } = useWallet();
   const { program } = useSlideProgram();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [expensePackages, setExpensePackages] = useState<any>([]);
+  const [expensePackages, setExpensePackages] = useState<ExpensePackageItem[]>(
+    []
+  );
+
+  async function refetchExpensePackage(expensePackagePubkey: PublicKey) {
+    if (program) {
+      // @ts-ignore
+      const expensePackage: ExpensePackage =
+        await program.account.expensePackage.fetch(expensePackagePubkey);
+      setExpensePackages((prevPackages) => {
+        return prevPackages.map((currPackage) => {
+          if (currPackage.publicKey.equals(expensePackagePubkey)) {
+            return {
+              account: expensePackage,
+              publicKey: currPackage.publicKey,
+            };
+          }
+          return currPackage;
+        });
+      });
+    }
+  }
 
   useEffect(() => {
     async function getExpensePackages() {
@@ -350,6 +377,7 @@ const ExpensePackageContent = ({
           memcmp: { offset: 41, bytes: expenseManager.publicKey.toBase58() },
         };
         setExpensePackages(
+          // @ts-ignore
           await program.account.expensePackage.all([managerFilter])
         );
       }
@@ -373,6 +401,7 @@ const ExpensePackageContent = ({
           expenseManager={expenseManager}
           expensePackages={expensePackages}
           canApproveAndDeny={!!accessRecord}
+          refetchExpensePackage={refetchExpensePackage}
         />
       )}
     </div>
@@ -383,12 +412,14 @@ type ExpensePackageListProps = {
   expenseManager: ExpenseManagerItem;
   expensePackages: ExpensePackageItem[];
   canApproveAndDeny?: boolean;
+  refetchExpensePackage?: (expenseManagerPubkey: PublicKey) => void;
 };
 
 const ExpensePackageList = ({
   expenseManager,
   expensePackages,
   canApproveAndDeny,
+  refetchExpensePackage,
 }: ExpensePackageListProps) => {
   return (
     <div className="flex flex-col gap-4">
@@ -398,6 +429,11 @@ const ExpensePackageList = ({
           expenseManager={expenseManager}
           expensePackage={expensePackage}
           canApproveAndDeny={canApproveAndDeny}
+          refetchExpensePackage={() => {
+            if (refetchExpensePackage) {
+              refetchExpensePackage(expensePackage.publicKey);
+            }
+          }}
         />
       ))}
     </div>

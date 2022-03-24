@@ -1,21 +1,23 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import { ExpenseManagerItem, ExpensePackageItem } from "types";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSlideProgram } from "utils/useSlide";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
 import { constants, address, Slide } from "@slidexyz/slide-sdk";
-import { useRouter } from "next/router";
 import { Program } from "@project-serum/anchor";
 import {
   getMemberEquityAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
+import { Loader } from "../../components";
+import { useAlert } from "react-alert";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
   expensePackage: ExpensePackageItem;
   canApproveAndDeny?: boolean;
+  refetchExpensePackage?: () => void;
 };
 
 const submitSPLPackage = async (
@@ -23,12 +25,11 @@ const submitSPLPackage = async (
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   expensePackage: ExpensePackageItem
-) => {
+): Promise<string | undefined> => {
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    alert("Manager not setup for SPL");
-    return;
+    return "Manager not setup for SPL";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
     constants.SPL_GOV_PROGRAM_ID,
@@ -52,12 +53,11 @@ const approveSPLPackage = async (
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   expensePackage: ExpensePackageItem
-) => {
+): Promise<string | undefined> => {
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    alert("Manager not setup for SPL");
-    return;
+    return "Manager not setup for SPL";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
     constants.SPL_GOV_PROGRAM_ID,
@@ -87,12 +87,11 @@ const denySPLPackage = async (
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   expensePackage: ExpensePackageItem
-) => {
+): Promise<string | undefined> => {
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    alert("Manager not setup for SPL");
-    return;
+    return "Manager not setup for SPL";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
     constants.SPL_GOV_PROGRAM_ID,
@@ -122,12 +121,11 @@ const submitSquadsPackage = async (
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   expensePackage: ExpensePackageItem
-) => {
+): Promise<string | undefined> => {
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    alert("Manager not setup for Squads");
-    return;
+    return "Manager not setup for Squads";
   }
   const [memberEquity] = await getMemberEquityAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
@@ -151,12 +149,11 @@ const approveSquadsPackage = async (
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   expensePackage: ExpensePackageItem
-) => {
+): Promise<string | undefined> => {
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    alert("Manager not setup for Squads");
-    return;
+    return "Manager not setup for Squads";
   }
   const [memberEquity] = await getMemberEquityAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
@@ -186,12 +183,11 @@ const denySquadsPackage = async (
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   expensePackage: ExpensePackageItem
-) => {
+): Promise<string | undefined> => {
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    alert("Manager not setup for Squads");
-    return;
+    return "Manager not setup for Squads";
   }
   const [memberEquity] = await getMemberEquityAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
@@ -220,10 +216,12 @@ export const ExpensePackageCard: FC<Props> = ({
   expenseManager,
   expensePackage,
   canApproveAndDeny,
+  refetchExpensePackage,
 }) => {
-  const router = useRouter();
+  const Alert = useAlert();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   const quantityDisplay = (
@@ -232,70 +230,82 @@ export const ExpensePackageCard: FC<Props> = ({
 
   const submitPackage = async () => {
     if (!program || !userPublicKey) {
-      alert("Please connect your wallet");
+      Alert.show("Please connect your wallet");
       return;
     }
+    let alertText;
     if (managerData.realm && managerData.governanceAuthority) {
-      await submitSPLPackage(
+      alertText = await submitSPLPackage(
         program,
         userPublicKey,
         expenseManager,
         expensePackage
       );
     } else {
-      await submitSquadsPackage(
+      alertText = await submitSquadsPackage(
         program,
         userPublicKey,
         expenseManager,
         expensePackage
       );
+    }
+    if (alertText) {
+      Alert.show(alertText);
     }
   };
   const approvePackage = async () => {
     if (!program || !userPublicKey) {
-      alert("Please connect your wallet");
+      Alert.show("Please connect your wallet");
       return;
     }
+    let alertText;
     if (managerData.realm && managerData.governanceAuthority) {
-      await approveSPLPackage(
+      alertText = await approveSPLPackage(
         program,
         userPublicKey,
         expenseManager,
         expensePackage
       );
     } else {
-      await approveSquadsPackage(
+      alertText = await approveSquadsPackage(
         program,
         userPublicKey,
         expenseManager,
         expensePackage
       );
+    }
+    if (alertText) {
+      Alert.show(alertText);
     }
   };
   const denyPackage = async () => {
     if (!program || !userPublicKey) {
-      alert("Please connect your wallet");
+      Alert.show("Please connect your wallet");
       return;
     }
+    let alertText;
     if (managerData.realm && managerData.governanceAuthority) {
-      await denySPLPackage(
+      alertText = await denySPLPackage(
         program,
         userPublicKey,
         expenseManager,
         expensePackage
       );
     } else {
-      await denySquadsPackage(
+      alertText = await denySquadsPackage(
         program,
         userPublicKey,
         expenseManager,
         expensePackage
       );
     }
+    if (alertText) {
+      Alert.show(alertText);
+    }
   };
   const withdrawPackage = async () => {
     if (!program || !userPublicKey) {
-      alert("Please connect your wallet");
+      Alert.show("Please connect your wallet");
       return;
     }
     await program.methods
@@ -315,51 +325,78 @@ export const ExpensePackageCard: FC<Props> = ({
         <h2 className="text-lg text-black">
           {packageData.name} {quantityDisplay}◎
         </h2>
-        {packageData.state.created && (
+        {isLoading && (
+          <div>
+            <Loader noText color="black" />
+          </div>
+        )}
+        {!isLoading && packageData.state.created && (
           <div className="flex gap-2">
             <button
               className="btn btn-primary w-24"
-              onClick={() =>
+              onClick={() => {
+                setIsLoading(true);
                 submitPackage()
-                  .then(() => router.reload())
-                  .catch(alert)
-              }
+                  .then(() => {
+                    if (refetchExpensePackage) {
+                      refetchExpensePackage();
+                    }
+                  })
+                  .catch((err: Error) => Alert.error(err.message))
+                  .finally(() => setIsLoading(false));
+              }}
             >
               Submit
             </button>
           </div>
         )}
-        {canApproveAndDeny && !packageOwnedByUser && packageData.state.pending && (
-          <div className="flex gap-2">
-            <button
-              className="btn btn-success w-24"
-              onClick={() =>
-                approvePackage()
-                  .then(() => router.reload())
-                  .catch(alert)
-              }
-            >
-              Approve
-            </button>
-            <button
-              className="btn btn-error w-24"
-              onClick={() =>
-                denyPackage()
-                  .then(() => router.reload())
-                  .catch(alert)
-              }
-            >
-              Deny
-            </button>
-          </div>
-        )}
-        {(!canApproveAndDeny || packageOwnedByUser) &&
+        {!isLoading &&
+          canApproveAndDeny &&
+          !packageOwnedByUser &&
+          packageData.state.pending && (
+            <div className="flex gap-2">
+              <button
+                className="btn btn-success w-24"
+                onClick={() => {
+                  setIsLoading(true);
+                  approvePackage()
+                    .then(() => {
+                      if (refetchExpensePackage) {
+                        refetchExpensePackage();
+                      }
+                    })
+                    .catch((err: Error) => Alert.error(err.message))
+                    .finally(() => setIsLoading(false));
+                }}
+              >
+                Approve
+              </button>
+              <button
+                className="btn btn-error w-24"
+                onClick={() => {
+                  setIsLoading(true);
+                  denyPackage()
+                    .then(() => {
+                      if (refetchExpensePackage) {
+                        refetchExpensePackage();
+                      }
+                    })
+                    .catch((err: Error) => Alert.error(err.message))
+                    .finally(() => setIsLoading(false));
+                }}
+              >
+                Deny
+              </button>
+            </div>
+          )}
+        {!isLoading &&
+          (!canApproveAndDeny || packageOwnedByUser) &&
           packageData.state.pending && (
             <button className="btn btn-primary btn-outline btn-disabled w-24">
               Pending
             </button>
           )}
-        {packageData.state.approved && (
+        {!isLoading && packageData.state.approved && (
           <div className="flex gap-2">
             <button className="btn btn-primary btn-outline btn-disabled w-24">
               Approved
@@ -367,23 +404,29 @@ export const ExpensePackageCard: FC<Props> = ({
             {packageOwnedByUser && (
               <button
                 className="btn btn-primary w-24"
-                onClick={() =>
+                onClick={() => {
+                  setIsLoading(true);
                   withdrawPackage()
-                    .then(() => router.reload())
-                    .catch(alert)
-                }
+                    .then(() => {
+                      if (refetchExpensePackage) {
+                        refetchExpensePackage();
+                      }
+                    })
+                    .catch((err: Error) => Alert.error(err.message))
+                    .finally(() => setIsLoading(false));
+                }}
               >
                 Withdraw
               </button>
             )}
           </div>
         )}
-        {packageData.state.denied && (
+        {!isLoading && packageData.state.denied && (
           <button className="btn btn-error btn-disabled btn-outline w-24">
             Denied
           </button>
         )}
-        {packageData.state.paid && (
+        {!isLoading && packageData.state.paid && (
           <button className="btn btn-primary btn-outline btn-disabled w-24">
             Paid
           </button>

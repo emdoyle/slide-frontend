@@ -3,6 +3,8 @@ import type { AppProps } from "next/app";
 import dynamic from "next/dynamic";
 import { ConnectionProvider } from "@solana/wallet-adapter-react";
 import { SlideProgramProvider } from "../contexts/SlideProgramProvider";
+import { transitions, positions, Provider as AlertProvider } from "react-alert";
+import AlertTemplate from "react-alert-template-basic";
 
 import "tailwindcss/tailwind.css";
 import "../styles/globals.css";
@@ -23,6 +25,13 @@ const WalletProvider = dynamic(
   }
 );
 
+const AlertOptions = {
+  position: positions.BOTTOM_LEFT,
+  timeout: 4000,
+  offset: "10px",
+  transition: transitions.SCALE,
+};
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ConnectionProvider endpoint={endpoint}>
@@ -33,7 +42,9 @@ function MyApp({ Component, pageProps }: AppProps) {
             new PublicKey("3nunqfARwEnmSGg5b9aDEWuBVQHHHhztRAXR4bM4CYCE")
           }
         >
-          <Component {...pageProps} />
+          <AlertProvider template={AlertTemplate} {...AlertOptions}>
+            <Component {...pageProps} />
+          </AlertProvider>
         </SlideProgramProvider>
       </WalletProvider>
     </ConnectionProvider>

@@ -3,12 +3,17 @@ import { FC } from "react";
 type Props = {
   noText?: boolean;
   text?: string;
+  color?: string;
 };
-export const Loader: FC<Props> = ({ text = "Loading...", noText = false }) => {
+export const Loader: FC<Props> = ({
+  text = "Loading...",
+  noText = false,
+  color = "white",
+}) => {
   return (
     <div className="flex flex-col justify-center items-center text-xl font-light">
       <svg
-        className="animate-spin h-8 w-8 text-white"
+        className={`animate-spin h-8 w-8 text-${color}`}
         xmlns="http://www.w3.org/2000/svg"
         fill="white"
         viewBox="0 0 24 24"

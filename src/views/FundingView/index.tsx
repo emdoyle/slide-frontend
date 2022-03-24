@@ -26,17 +26,17 @@ import {
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
 import { PromptConnectWallet } from "../../components/PromptConnectWallet";
+import { useAlert } from "react-alert";
 
 const createSPLWithdrawalProposal = async (
   program: Program<Slide>,
   connection: Connection,
   user: PublicKey,
   expenseManager: ExpenseManagerItem
-) => {
+): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    alert("Manager not set up for SPL");
-    return;
+    return "Manager not set up for SPL";
   }
   const proposalCount = (
     await getAllProposals(
@@ -123,11 +123,10 @@ const createSquadsWithdrawalProposal = async (
   program: Program<Slide>,
   user: PublicKey,
   expenseManager: ExpenseManagerItem
-) => {
+): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    alert("Manager is not setup for Squads");
-    return;
+    return "Manager is not setup for Squads";
   }
   const instructions: TransactionInstruction[] = [];
   const { proposal } = await withCreateProposalAccount(
@@ -146,11 +145,11 @@ const createSquadsWithdrawalProposal = async (
   // @ts-ignore
   await utils.flushInstructions(program, instructions, []);
 
-  alert(`Created proposal: ${proposal.toString()}`);
+  return `Created proposal: ${proposal.toString()}`;
 };
 
 export const FundingView: FC = ({}) => {
-  const router = useRouter();
+  const Alert = useAlert();
   const { connection } = useConnection();
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
@@ -178,23 +177,28 @@ export const FundingView: FC = ({}) => {
 
   const withdrawFromManager = async () => {
     if (!program || !expenseManager || !userPublicKey) {
-      alert("Please connect your wallet");
+      Alert.show("Please connect your wallet");
       return;
     }
     const managerData = expenseManager.account;
+    let alertText;
     if (managerData.realm && managerData.governanceAuthority) {
-      await createSPLWithdrawalProposal(
+      alertText = await createSPLWithdrawalProposal(
         program,
         connection,
         userPublicKey,
         expenseManager
       );
     } else {
-      await createSquadsWithdrawalProposal(
+      alertText = await createSquadsWithdrawalProposal(
         program,
         userPublicKey,
         expenseManager
       );
+    }
+
+    if (alertText) {
+      Alert.show(alertText);
     }
   };
 
@@ -249,7 +253,7 @@ export const FundingView: FC = ({}) => {
                         setWithdrawLoading(true);
                         withdrawFromManager()
                           .then(() => {
-                            alert("Success");
+                            Alert.show("Success");
                           })
                           .catch(console.error)
                           .finally(() => setWithdrawLoading(false));
@@ -259,7 +263,7 @@ export const FundingView: FC = ({}) => {
                     </button>
                     {withdrawLoading && (
                       <div>
-                        <Loader />
+                        <Loader noText />
                       </div>
                     )}
                   </div>
