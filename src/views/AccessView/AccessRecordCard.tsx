@@ -10,10 +10,13 @@ export const AccessRecordCard: FC<Props> = ({ accessRecord }) => {
   return (
     <div className="bordered w-full compact rounded-md bg-white">
       <div className="flex justify-between items-center p-4">
-        <div className="flex w-full p-4 justify-between items-between">
+        <div className="flex flex-col w-full p-4 justify-between items-between">
           <h2 className="text-lg text-black">
             {accessRecord.account.user.toString()}
           </h2>
+          {accessRecord.account.role.reviewer && (
+            <p className="text-black">Reviewer</p>
+          )}
         </div>
       </div>
     </div>

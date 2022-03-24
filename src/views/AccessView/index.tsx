@@ -25,8 +25,11 @@ import { Program } from "@project-serum/anchor";
 import {
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
   withCreateProposalAccount,
+  getProposals,
+  ProposalItem,
 } from "@slidexyz/squads-sdk";
 import { useAlert } from "react-alert";
+import { PendingAccessProposal } from "./PendingAccessProposal";
 
 const createSPLAccessProposal = async (
   program: Program<Slide>,
@@ -154,13 +157,14 @@ export const AccessView: FC = ({}) => {
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [proposalLoading, setProposalLoading] = useState<boolean>(false);
+  const [proposalSubmitting, setProposalSubmitting] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
 
-  useEffect(() => {
-    async function getExpenseManager() {
-      if (program && query?.pubkey) {
+  async function fetchExpenseManager() {
+    if (program && query?.pubkey) {
+      setIsLoading(true);
+      try {
         const expenseManagerPubkey = new PublicKey(query.pubkey);
         const expenseManagerAccount: ExpenseManager =
           await program.account.expenseManager.fetch(expenseManagerPubkey);
@@ -168,10 +172,20 @@ export const AccessView: FC = ({}) => {
           account: expenseManagerAccount,
           publicKey: expenseManagerPubkey,
         });
+      } catch (err) {
+        if (err instanceof Error) {
+          Alert.error(err.message);
+        } else {
+          Alert.error("An unknown error occurred");
+        }
+      } finally {
+        setIsLoading(false);
       }
     }
-    setIsLoading(true);
-    getExpenseManager().finally(() => setIsLoading(false));
+  }
+
+  useEffect(() => {
+    fetchExpenseManager();
   }, [program?.programId, query?.pubkey]);
 
   const createAccessProposal = async () => {
@@ -225,19 +239,22 @@ export const AccessView: FC = ({}) => {
                         &apos;Reviewer&apos; access
                       </p>
                       <button
-                        disabled={proposalLoading}
+                        disabled={proposalSubmitting}
                         className="btn btn-primary"
                         onClick={() => {
-                          setProposalLoading(true);
+                          setProposalSubmitting(true);
                           createAccessProposal()
                             .then(() => Alert.show("Success"))
                             .catch((err) => Alert.error(err.message))
-                            .finally(() => setProposalLoading(false));
+                            .finally(() => setProposalSubmitting(false));
                         }}
                       >
                         Create
                       </button>
                     </div>
+                    {expenseManager && (
+                      <ProposalContent expenseManager={expenseManager} />
+                    )}
                     <AccessRecordContent
                       managerPubkey={new PublicKey(query.pubkey)}
                     />
@@ -254,6 +271,75 @@ export const AccessView: FC = ({}) => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+const ProposalContent = ({
+  expenseManager,
+}: {
+  expenseManager: ExpenseManagerItem;
+}) => {
+  const Alert = useAlert();
+  const { connection } = useConnection();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [proposals, setProposals] = useState<ProposalItem[]>([]);
+  async function fetchProposals() {
+    if (expenseManager.account.squad) {
+      setIsLoading(true);
+      try {
+        const proposalItems = await getProposals(
+          SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+          connection,
+          expenseManager.account.squad
+        );
+        setProposals(proposalItems);
+      } catch (err) {
+        if (err instanceof Error) {
+          Alert.error(err.message);
+        } else {
+          Alert.error("An unknown error occurred");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }
+  useEffect(() => {
+    fetchProposals();
+  }, [expenseManager.account.squad?.toString()]);
+
+  if (isLoading) {
+    return (
+      <div className="my-10">
+        <Loader />
+      </div>
+    );
+  }
+
+  return <ProposalList proposals={proposals} expenseManager={expenseManager} />;
+};
+
+const ProposalList = ({
+  proposals,
+  expenseManager,
+}: {
+  proposals: ProposalItem[];
+  expenseManager: ExpenseManagerItem;
+}) => {
+  const pendingAccessProposals = proposals.filter((proposal) =>
+    proposal.account.title.includes("Reviewer Access")
+  );
+  if (!pendingAccessProposals) return null;
+  return (
+    <div className="flex flex-col gap-4 my-10">
+      {pendingAccessProposals.map((proposal) => (
+        <PendingAccessProposal
+          key={proposal.pubkey.toString()}
+          proposal={proposal}
+          expenseManager={expenseManager}
+        />
+      ))}
     </div>
   );
 };
@@ -297,7 +383,6 @@ const AccessRecordContent = ({
 
 type AccessRecordListProps = {
   accessRecords: AccessRecordItem[];
-  error?: Error;
 };
 
 const AccessRecordList = ({ accessRecords }: AccessRecordListProps) => {
