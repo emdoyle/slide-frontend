@@ -1,6 +1,6 @@
-import { PublicKey } from "@solana/web3.js";
+import { AccountInfo, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { ProgramAccount, Realm } from "@solana/spl-governance";
+import { Governance, ProgramAccount, Realm } from "@solana/spl-governance";
 
 export type ExpenseManager = {
   bump: number;
@@ -48,3 +48,11 @@ export type AccessRecordItem = {
 };
 
 export type RealmItem = ProgramAccount<Realm>;
+export type GovernanceItem = ProgramAccount<Governance>;
+export type TreasuryItem = {
+  account: AccountInfo<Buffer>;
+  pubkey: PublicKey;
+};
+export type TreasuryWithGovernance = TreasuryItem & {
+  governance: GovernanceItem;
+};

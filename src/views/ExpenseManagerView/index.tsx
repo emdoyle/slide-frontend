@@ -6,7 +6,7 @@ import { ExpenseManagerCard } from "./ExpenseManagerCard";
 import styles from "./index.module.css";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
-import { ExpenseManagerItem, RealmItem } from "types";
+import { ExpenseManagerItem, RealmItem, TreasuryWithGovernance } from "types";
 import {
   getMemberEquityAddressAndBump,
   getSquadMintAddressAndBump,
@@ -16,10 +16,10 @@ import {
 } from "@slidexyz/squads-sdk";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
-  getRealm,
+  getAllGovernances,
+  getNativeTreasuryAddress,
   getRealms,
   getTokenOwnerRecordAddress,
-  Realm,
 } from "@solana/spl-governance";
 import { address, constants, utils } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
@@ -27,6 +27,7 @@ import { useAlert } from "react-alert";
 import { SquadsCombobox } from "./SquadsCombobox";
 import { RealmsCombobox } from "./RealmsCombobox";
 import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
+import { TreasuryCombobox } from "./TreasuryCombobox";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -139,13 +140,17 @@ const CreateExpenseManagerModal = ({
   const [name, setName] = useState<string>("");
   const [usingSPL, setUsingSPL] = useState<boolean>(true);
   const [realm, setRealm] = useState<RealmItem | null>(null);
-  const [govAuthority, setGovAuthority] = useState<string>("");
+  const [treasury, setTreasury] = useState<TreasuryWithGovernance | null>(null);
   const [squad, setSquad] = useState<SquadItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [allSquads, setAllSquads] = useState<SquadItem[]>([]);
   const [squadsLoading, setSquadsLoading] = useState<boolean>(false);
   const [allRealms, setAllRealms] = useState<RealmItem[]>([]);
   const [realmsLoading, setRealmsLoading] = useState<boolean>(false);
+  const [allTreasuries, setAllTreasuries] = useState<TreasuryWithGovernance[]>(
+    []
+  );
+  const [treasuriesLoading, setTreasuriesLoading] = useState<boolean>(false);
 
   const fetchSquads = async () => {
     setSquadsLoading(true);
@@ -179,6 +184,48 @@ const CreateExpenseManagerModal = ({
     }
   };
 
+  const fetchTreasuries = async (realmPubkey: PublicKey) => {
+    setTreasuriesLoading(true);
+    try {
+      const governances = await getAllGovernances(
+        connection,
+        SPL_GOV_PROGRAM_ID,
+        realmPubkey
+      );
+      const treasuryPubkeys: PublicKey[] = [];
+      for (let i = 0; i < governances.length; i++) {
+        treasuryPubkeys.push(
+          await getNativeTreasuryAddress(
+            SPL_GOV_PROGRAM_ID,
+            governances[i].pubkey
+          )
+        );
+      }
+      setAllTreasuries(
+        (await connection.getMultipleAccountsInfo(treasuryPubkeys)).flatMap(
+          (account, idx) =>
+            account
+              ? [
+                  {
+                    account: account,
+                    pubkey: treasuryPubkeys[idx],
+                    governance: governances[idx],
+                  },
+                ]
+              : []
+        )
+      );
+    } catch (err) {
+      if (err instanceof Error) {
+        Alert.error(err.message);
+      } else {
+        Alert.error("An unknown error occurred when fetching Squads.");
+      }
+    } finally {
+      setTreasuriesLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!usingSPL) {
       fetchSquads();
@@ -189,37 +236,30 @@ const CreateExpenseManagerModal = ({
     }
   }, [usingSPL]);
 
+  useEffect(() => {
+    if (realm) {
+      fetchTreasuries(realm.pubkey);
+    }
+  }, [realm?.pubkey.toString()]);
+
   const submitForm = async () => {
     if (!program || !userPublicKey) {
       Alert.show("Please connect your wallet to submit this form.");
       return;
     }
-    let govAuthPubkey;
-    try {
-      if (usingSPL) {
-        govAuthPubkey = new PublicKey(govAuthority);
-      } else {
-      }
-    } catch (e) {
-      Alert.show("Could not parse Public Keys, please check they are correct.");
-      return;
-    }
 
     let govTokenMint;
     if (usingSPL) {
-      // get the mint from the realm (communityMint)
-      if (!realm?.pubkey || !govAuthPubkey) {
+      if (!realm?.pubkey || !treasury?.pubkey) {
         Alert.show(
-          "Could not parse Public Keys, please check they are correct."
+          "Could not parse Public Keys from selected Realm and Treasury."
         );
         return;
       }
       govTokenMint = realm.account.communityMint;
     } else {
       if (!squad?.pubkey) {
-        Alert.show(
-          "Could not parse Public Keys, please check they are correct."
-        );
+        Alert.show("Could not parse Public Keys from selected Squad.");
         return;
       }
       [govTokenMint] = await getSquadMintAddressAndBump(
@@ -253,7 +293,7 @@ const CreateExpenseManagerModal = ({
         .splGovInitializeExpenseManager(realm?.pubkey, govAuthPubkey)
         .accounts({
           expenseManager,
-          governanceAuthority: govAuthPubkey,
+          governanceAuthority: treasury?.governance.pubkey,
           tokenOwnerRecord,
           member: userPublicKey,
         })
@@ -334,13 +374,11 @@ const CreateExpenseManagerModal = ({
                 selectedRealm={realm}
                 setSelectedRealm={setRealm}
               />
-              <input
-                disabled={isSubmitting}
-                type="text"
-                placeholder="Governance Pubkey"
-                className="input input-bordered w-full bg-white text-black"
-                value={govAuthority}
-                onChange={(event) => setGovAuthority(event.target.value)}
+              <TreasuryCombobox
+                treasuries={allTreasuries}
+                selectedTreasury={treasury}
+                setSelectedTreasury={setTreasury}
+                disabled={isSubmitting || !realm}
               />
             </>
           )}
