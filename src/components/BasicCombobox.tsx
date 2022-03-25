@@ -14,6 +14,7 @@ export type BasicComboboxProps<T> = {
   ) => string;
   getFilterable?: (value: T) => string;
   getKey?: (value: T) => string;
+  maxOptions?: number;
 };
 
 export function BasicCombobox<T>({
@@ -24,6 +25,7 @@ export function BasicCombobox<T>({
   getDisplayable,
   getFilterable,
   getKey,
+  maxOptions = 4,
 }: BasicComboboxProps<T>) {
   const [query, setQuery] = useState<string>("");
 
@@ -31,7 +33,7 @@ export function BasicCombobox<T>({
   const filterFn = getFilterable ?? getDisplayable;
   const filteredOptions =
     query === ""
-      ? options
+      ? options.slice(0, maxOptions)
       : options
           .filter((option) =>
             filterFn(option)
@@ -39,7 +41,7 @@ export function BasicCombobox<T>({
               .replace(/\s+/g, "")
               .includes(query.toLowerCase().replace(/\s+/g, ""))
           )
-          .slice(0, 4);
+          .slice(0, maxOptions);
 
   return (
     <div className="w-full">

@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
+import { ProgramAccount, Realm } from "@solana/spl-governance";
 
 export type ExpenseManager = {
   bump: number;
@@ -45,3 +46,5 @@ export type AccessRecordItem = {
   account: AccessRecord;
   publicKey: PublicKey;
 };
+
+export type RealmItem = ProgramAccount<Realm>;

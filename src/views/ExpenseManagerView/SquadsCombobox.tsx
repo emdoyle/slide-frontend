@@ -1,5 +1,5 @@
 import { SquadItem } from "@slidexyz/squads-sdk";
-import { BasicCombobox } from "../../components/BasicCombobox";
+import { BasicCombobox } from "components/BasicCombobox";
 
 export const SquadsCombobox = ({
   squads,
@@ -32,6 +32,7 @@ export const SquadsCombobox = ({
       options={squads}
       disabled={disabled}
       getDisplayable={getDisplayable}
+      getFilterable={getFilterable}
     />
   );
 };

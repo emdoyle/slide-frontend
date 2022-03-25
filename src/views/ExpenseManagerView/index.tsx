@@ -6,7 +6,7 @@ import { ExpenseManagerCard } from "./ExpenseManagerCard";
 import styles from "./index.module.css";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
-import { ExpenseManagerItem } from "types";
+import { ExpenseManagerItem, RealmItem } from "types";
 import {
   getMemberEquityAddressAndBump,
   getSquadMintAddressAndBump,
@@ -17,6 +17,7 @@ import {
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   getRealm,
+  getRealms,
   getTokenOwnerRecordAddress,
   Realm,
 } from "@solana/spl-governance";
@@ -24,6 +25,8 @@ import { address, constants, utils } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
 import { useAlert } from "react-alert";
 import { SquadsCombobox } from "./SquadsCombobox";
+import { RealmsCombobox } from "./RealmsCombobox";
+import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -135,13 +138,13 @@ const CreateExpenseManagerModal = ({
   const { program } = useSlideProgram();
   const [name, setName] = useState<string>("");
   const [usingSPL, setUsingSPL] = useState<boolean>(true);
-  const [realm, setRealm] = useState<string>("");
+  const [realm, setRealm] = useState<RealmItem | null>(null);
   const [govAuthority, setGovAuthority] = useState<string>("");
   const [squad, setSquad] = useState<SquadItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [allSquads, setAllSquads] = useState<SquadItem[]>([]);
   const [squadsLoading, setSquadsLoading] = useState<boolean>(false);
-  const [allRealms, setAllRealms] = useState<Realm[]>([]);
+  const [allRealms, setAllRealms] = useState<RealmItem[]>([]);
   const [realmsLoading, setRealmsLoading] = useState<boolean>(false);
 
   const fetchSquads = async () => {
@@ -161,24 +164,39 @@ const CreateExpenseManagerModal = ({
     }
   };
 
+  const fetchRealms = async () => {
+    setRealmsLoading(true);
+    try {
+      setAllRealms(await getRealms(connection, SPL_GOV_PROGRAM_ID));
+    } catch (err) {
+      if (err instanceof Error) {
+        Alert.error(err.message);
+      } else {
+        Alert.error("An unknown error occurred when fetching Squads.");
+      }
+    } finally {
+      setRealmsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!usingSPL) {
       fetchSquads();
+      setRealm(null);
     } else {
+      fetchRealms();
       setSquad(null);
     }
   }, [usingSPL]);
 
   const submitForm = async () => {
-    if (!program) {
+    if (!program || !userPublicKey) {
       Alert.show("Please connect your wallet to submit this form.");
       return;
     }
-    let realmPubkey;
     let govAuthPubkey;
     try {
       if (usingSPL) {
-        realmPubkey = new PublicKey(realm);
         govAuthPubkey = new PublicKey(govAuthority);
       } else {
       }
@@ -190,14 +208,13 @@ const CreateExpenseManagerModal = ({
     let govTokenMint;
     if (usingSPL) {
       // get the mint from the realm (communityMint)
-      if (!realmPubkey || !govAuthPubkey) {
+      if (!realm?.pubkey || !govAuthPubkey) {
         Alert.show(
           "Could not parse Public Keys, please check they are correct."
         );
         return;
       }
-      govTokenMint = (await getRealm(connection, realmPubkey)).account
-        .communityMint;
+      govTokenMint = realm.account.communityMint;
     } else {
       if (!squad?.pubkey) {
         Alert.show(
@@ -227,13 +244,13 @@ const CreateExpenseManagerModal = ({
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
         constants.SPL_GOV_PROGRAM_ID,
         // @ts-ignore
-        realmPubkey,
+        realm?.pubkey,
         govTokenMint,
         userPublicKey
       );
       initializeManager = await program.methods
         // @ts-ignore
-        .splGovInitializeExpenseManager(realmPubkey, govAuthPubkey)
+        .splGovInitializeExpenseManager(realm?.pubkey, govAuthPubkey)
         .accounts({
           expenseManager,
           governanceAuthority: govAuthPubkey,
@@ -244,8 +261,8 @@ const CreateExpenseManagerModal = ({
     } else {
       const [memberEquityRecord] = await getMemberEquityAddressAndBump(
         SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-        // @ts-ignore
         userPublicKey,
+        // @ts-ignore
         squad?.pubkey
       );
       initializeManager = await program.methods
@@ -280,37 +297,42 @@ const CreateExpenseManagerModal = ({
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
-          <div className="flex justify-center items-center px-4">
+          <div className="flex justify-center items-center">
             <input
               disabled={isSubmitting}
               type="radio"
-              className=""
+              className="radio"
               name="daoProvider"
               id="radioSPL"
               checked={usingSPL}
               onChange={(event) => setUsingSPL(event.target.checked)}
             />
-            <label htmlFor="radioSPL">SPL Governance</label>
+            <label
+              className="label cursor-pointer pl-2 pr-8"
+              htmlFor="radioSPL"
+            >
+              SPL Governance
+            </label>
             <input
               disabled={isSubmitting}
               type="radio"
-              className=""
+              className="radio"
               name="daoProvider"
               id="radioSquads"
               checked={!usingSPL}
               onChange={(event) => setUsingSPL(!event.target.checked)}
             />
-            <label htmlFor="radioSquads">Squads</label>
+            <label className="label cursor-pointer pl-2" htmlFor="radioSquads">
+              Squads
+            </label>
           </div>
           {usingSPL && (
             <>
-              <input
+              <RealmsCombobox
                 disabled={isSubmitting}
-                type="text"
-                placeholder="Realm Pubkey"
-                className="input input-bordered w-full bg-white text-black"
-                value={realm}
-                onChange={(event) => setRealm(event.target.value)}
+                realms={allRealms}
+                selectedRealm={realm}
+                setSelectedRealm={setRealm}
               />
               <input
                 disabled={isSubmitting}
