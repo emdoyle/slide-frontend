@@ -17,6 +17,9 @@ import { useAlert } from "react-alert";
 type Props = {
   proposal: ProposalItem;
   expenseManager: ExpenseManagerItem;
+  // TODO: need to do some state rearranging to get this - SWR abstraction might
+  //  be worth it if there is caching by key/manual invalidation etc.
+  refetchAccessRecords?: () => void;
 };
 
 const executeAccessProposal = async (
@@ -46,12 +49,13 @@ const executeAccessProposal = async (
       signer: user,
     })
     .rpc();
-  return `Access Proposal: ${proposal} executed! User: ${user.toString()} should now have access`;
+  return `Access Proposal executed!`;
 };
 
 export const PendingAccessProposal: FC<Props> = ({
   proposal,
   expenseManager,
+  refetchAccessRecords,
 }) => {
   const Alert = useAlert();
   const { program } = useSlideProgram();
@@ -103,6 +107,9 @@ export const PendingAccessProposal: FC<Props> = ({
             className="btn w-24"
             onClick={() => {
               executeProposal();
+              if (refetchAccessRecords) {
+                refetchAccessRecords();
+              }
             }}
           >
             Execute

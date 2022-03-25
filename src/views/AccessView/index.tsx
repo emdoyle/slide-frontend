@@ -309,6 +309,10 @@ const ProposalContent = ({
     fetchProposals();
   }, [expenseManager.account.squad?.toString()]);
 
+  const pendingAccessProposals = proposals.filter((proposal) =>
+    proposal.account.title.includes("Reviewer Access")
+  );
+
   if (isLoading) {
     return (
       <div className="my-10">
@@ -317,20 +321,8 @@ const ProposalContent = ({
     );
   }
 
-  return <ProposalList proposals={proposals} expenseManager={expenseManager} />;
-};
-
-const ProposalList = ({
-  proposals,
-  expenseManager,
-}: {
-  proposals: ProposalItem[];
-  expenseManager: ExpenseManagerItem;
-}) => {
-  const pendingAccessProposals = proposals.filter((proposal) =>
-    proposal.account.title.includes("Reviewer Access")
-  );
   if (!pendingAccessProposals) return null;
+
   return (
     <div className="flex flex-col gap-4 my-10">
       {pendingAccessProposals.map((proposal) => (

@@ -10,13 +10,20 @@ import { ExpenseManagerItem } from "types";
 import {
   getMemberEquityAddressAndBump,
   getSquadMintAddressAndBump,
+  getSquads,
+  SquadItem,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { getRealm, getTokenOwnerRecordAddress } from "@solana/spl-governance";
+import {
+  getRealm,
+  getTokenOwnerRecordAddress,
+  Realm,
+} from "@solana/spl-governance";
 import { address, constants, utils } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
 import { useAlert } from "react-alert";
+import { SquadsCombobox } from "./SquadsCombobox";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -130,8 +137,37 @@ const CreateExpenseManagerModal = ({
   const [usingSPL, setUsingSPL] = useState<boolean>(true);
   const [realm, setRealm] = useState<string>("");
   const [govAuthority, setGovAuthority] = useState<string>("");
-  const [squad, setSquad] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [squad, setSquad] = useState<SquadItem | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [allSquads, setAllSquads] = useState<SquadItem[]>([]);
+  const [squadsLoading, setSquadsLoading] = useState<boolean>(false);
+  const [allRealms, setAllRealms] = useState<Realm[]>([]);
+  const [realmsLoading, setRealmsLoading] = useState<boolean>(false);
+
+  const fetchSquads = async () => {
+    setSquadsLoading(true);
+    try {
+      setAllSquads(
+        await getSquads(SQUADS_CUSTOM_DEVNET_PROGRAM_ID, connection)
+      );
+    } catch (err) {
+      if (err instanceof Error) {
+        Alert.error(err.message);
+      } else {
+        Alert.error("An unknown error occurred when fetching Squads.");
+      }
+    } finally {
+      setSquadsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!usingSPL) {
+      fetchSquads();
+    } else {
+      setSquad(null);
+    }
+  }, [usingSPL]);
 
   const submitForm = async () => {
     if (!program) {
@@ -140,13 +176,11 @@ const CreateExpenseManagerModal = ({
     }
     let realmPubkey;
     let govAuthPubkey;
-    let squadPubkey;
     try {
       if (usingSPL) {
         realmPubkey = new PublicKey(realm);
         govAuthPubkey = new PublicKey(govAuthority);
       } else {
-        squadPubkey = new PublicKey(squad);
       }
     } catch (e) {
       Alert.show("Could not parse Public Keys, please check they are correct.");
@@ -165,7 +199,7 @@ const CreateExpenseManagerModal = ({
       govTokenMint = (await getRealm(connection, realmPubkey)).account
         .communityMint;
     } else {
-      if (!squadPubkey) {
+      if (!squad?.pubkey) {
         Alert.show(
           "Could not parse Public Keys, please check they are correct."
         );
@@ -173,7 +207,7 @@ const CreateExpenseManagerModal = ({
       }
       [govTokenMint] = await getSquadMintAddressAndBump(
         SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-        squadPubkey
+        squad.pubkey
       );
     }
     const [expenseManager] = address.getExpenseManagerAddressAndBump(
@@ -212,14 +246,14 @@ const CreateExpenseManagerModal = ({
         SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
         // @ts-ignore
         userPublicKey,
-        squadPubkey
+        squad?.pubkey
       );
       initializeManager = await program.methods
         .squadsInitializeExpenseManager()
         .accounts({
           expenseManager,
           memberEquity: memberEquityRecord,
-          squad: squadPubkey,
+          squad: squad?.pubkey,
           member: userPublicKey,
         })
         .instruction();
@@ -239,7 +273,7 @@ const CreateExpenseManagerModal = ({
         <h3 className="font-bold text-lg">Create an expense manager</h3>
         <div className="flex flex-col gap-2 justify-center">
           <input
-            disabled={isLoading}
+            disabled={isSubmitting}
             type="text"
             placeholder="Name"
             className="input input-bordered w-full bg-white text-black"
@@ -248,7 +282,7 @@ const CreateExpenseManagerModal = ({
           />
           <div className="flex justify-center items-center px-4">
             <input
-              disabled={isLoading}
+              disabled={isSubmitting}
               type="radio"
               className=""
               name="daoProvider"
@@ -258,7 +292,7 @@ const CreateExpenseManagerModal = ({
             />
             <label htmlFor="radioSPL">SPL Governance</label>
             <input
-              disabled={isLoading}
+              disabled={isSubmitting}
               type="radio"
               className=""
               name="daoProvider"
@@ -271,7 +305,7 @@ const CreateExpenseManagerModal = ({
           {usingSPL && (
             <>
               <input
-                disabled={isLoading}
+                disabled={isSubmitting}
                 type="text"
                 placeholder="Realm Pubkey"
                 className="input input-bordered w-full bg-white text-black"
@@ -279,7 +313,7 @@ const CreateExpenseManagerModal = ({
                 onChange={(event) => setRealm(event.target.value)}
               />
               <input
-                disabled={isLoading}
+                disabled={isSubmitting}
                 type="text"
                 placeholder="Governance Pubkey"
                 className="input input-bordered w-full bg-white text-black"
@@ -289,29 +323,27 @@ const CreateExpenseManagerModal = ({
             </>
           )}
           {!usingSPL && (
-            <input
-              disabled={isLoading}
-              type="text"
-              placeholder="Squads Pubkey"
-              className="input input-bordered w-full bg-white text-black"
-              value={squad}
-              onChange={(event) => setSquad(event.target.value)}
+            <SquadsCombobox
+              disabled={isSubmitting}
+              squads={allSquads}
+              selectedSquad={squad}
+              setSelectedSquad={setSquad}
             />
           )}
         </div>
         <div className="flex gap-2 mt-4 justify-center">
           <button
-            disabled={isLoading}
+            disabled={isSubmitting}
             className="btn btn-primary"
             onClick={() => {
-              setIsLoading(true);
+              setIsSubmitting(true);
               submitForm()
                 .then(() => {
                   Alert.show("Success");
                   close(true);
                 })
-                .catch(console.error)
-                .finally(() => setIsLoading(false));
+                .catch((error: Error) => Alert.error(error.message))
+                .finally(() => setIsSubmitting(false));
             }}
           >
             Create
@@ -319,7 +351,7 @@ const CreateExpenseManagerModal = ({
           <button
             className="btn"
             onClick={() => {
-              setIsLoading(false);
+              setIsSubmitting(false);
               close();
             }}
           >
