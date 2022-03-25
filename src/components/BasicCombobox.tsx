@@ -50,7 +50,11 @@ export function BasicCombobox<T>({
     <div className="w-full">
       <Combobox value={value} onChange={setValue} disabled={disabled}>
         <div className="relative mt-1">
-          <div className="relative w-full text-left bg-white rounded-lg shadow-md cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-teal-300 focus-visible:ring-offset-2 sm:text-sm overflow-hidden">
+          <div
+            className={`relative w-full text-left ${
+              disabled ? "bg-gray-600" : "bg-white"
+            } rounded-lg shadow-md cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-teal-300 focus-visible:ring-offset-2 sm:text-sm overflow-hidden`}
+          >
             <Combobox.Label className="absolute text-gray-600 pl-2 pt-2">
               {label}
             </Combobox.Label>
@@ -61,7 +65,9 @@ export function BasicCombobox<T>({
             />
             <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
               <SelectorIcon
-                className="w-5 h-5 text-gray-400"
+                className={`w-5 h-5 ${
+                  disabled ? "text-black cursor-not-allowed" : "text-gray-400"
+                }`}
                 aria-hidden="true"
               />
             </Combobox.Button>
@@ -74,9 +80,11 @@ export function BasicCombobox<T>({
             afterLeave={() => setQuery("")}
           >
             <Combobox.Options className="w-full py-1 mt-1 text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-              {filteredOptions.length === 0 && query !== "" ? (
+              {filteredOptions.length === 0 ? (
                 <div className="cursor-default select-none relative py-2 px-4 text-gray-700">
-                  Nothing found.
+                  {options.length === 0
+                    ? "No options available."
+                    : "Nothing found."}
                 </div>
               ) : (
                 filteredOptions.map((option) => (
