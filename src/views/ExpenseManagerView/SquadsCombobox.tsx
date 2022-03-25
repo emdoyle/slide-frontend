@@ -6,11 +6,13 @@ export const SquadsCombobox = ({
   selectedSquad,
   setSelectedSquad,
   disabled,
+  label,
 }: {
   squads: SquadItem[];
   selectedSquad: SquadItem | null;
   setSelectedSquad: (squad: SquadItem | null) => void;
   disabled: boolean;
+  label?: string;
 }) => {
   const getDisplayable = (squad: SquadItem | null) => {
     if (squad) {
@@ -27,6 +29,7 @@ export const SquadsCombobox = ({
 
   return (
     <BasicCombobox
+      label={label ?? "Squads"}
       value={selectedSquad}
       setValue={setSelectedSquad}
       options={squads}

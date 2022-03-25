@@ -6,11 +6,13 @@ export const RealmsCombobox = ({
   selectedRealm,
   setSelectedRealm,
   disabled,
+  label,
 }: {
   realms: RealmItem[];
   selectedRealm: RealmItem | null;
   setSelectedRealm: (realm: RealmItem | null) => void;
   disabled: boolean;
+  label?: string;
 }) => {
   const getDisplayable = (realm: RealmItem | null) => {
     if (realm) {
@@ -27,6 +29,7 @@ export const RealmsCombobox = ({
 
   return (
     <BasicCombobox
+      label={label ?? "Realms"}
       value={selectedRealm}
       setValue={setSelectedRealm}
       options={realms}

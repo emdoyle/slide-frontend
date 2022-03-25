@@ -7,11 +7,13 @@ export const TreasuryCombobox = ({
   selectedTreasury,
   setSelectedTreasury,
   disabled,
+  label,
 }: {
   treasuries: TreasuryWithGovernance[];
   selectedTreasury: TreasuryWithGovernance | null;
   setSelectedTreasury: (treasury: TreasuryWithGovernance | null) => void;
   disabled: boolean;
+  label?: string;
 }) => {
   const getDisplayable = (treasury: TreasuryWithGovernance | null) => {
     if (treasury) {
@@ -35,6 +37,7 @@ export const TreasuryCombobox = ({
 
   return (
     <BasicCombobox
+      label={label ?? "Treasuries"}
       value={selectedTreasury}
       setValue={setSelectedTreasury}
       options={treasuries}
