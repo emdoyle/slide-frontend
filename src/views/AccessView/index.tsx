@@ -27,6 +27,7 @@ import {
   withCreateProposalAccount,
   getProposals,
   ProposalItem,
+  SquadItem,
 } from "@slidexyz/squads-sdk";
 import { useAlert } from "react-alert";
 import { PendingAccessProposal } from "./PendingAccessProposal";
@@ -139,8 +140,8 @@ const createSquadsAccessProposal = async (
     managerData.squad,
     1, // TODO: this requires us to pull Squad data from the chain!
     0,
-    "Reviewer Access",
-    `[SLIDEPROPOSAL]: This grants reviewer-level access in Slide to public key ${user.toString()}`,
+    "[SLIDE PROPOSAL] Grant Permission",
+    `member: ${user.toString()}\nrole: reviewer`,
     2,
     ["Approve", "Deny"]
   );
@@ -160,6 +161,8 @@ export const AccessView: FC = ({}) => {
   const [proposalSubmitting, setProposalSubmitting] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
+  // TODO: fetch squad (need single fetch in squads SDK)
+  const [squad, setSquad] = useState<SquadItem | null>(null);
 
   async function fetchExpenseManager() {
     if (program && query?.pubkey) {

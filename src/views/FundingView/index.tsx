@@ -22,6 +22,7 @@ import { constants, Slide, utils } from "@slidexyz/slide-sdk";
 import { useBalance } from "../../utils/useBalance";
 import { Program } from "@project-serum/anchor";
 import {
+  getSquadTreasuryAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
@@ -128,6 +129,10 @@ const createSquadsWithdrawalProposal = async (
   if (!managerData.squad) {
     return "Manager is not setup for Squads";
   }
+  const [squadTreasury] = await getSquadTreasuryAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    managerData.squad
+  );
   const instructions: TransactionInstruction[] = [];
   const { proposal } = await withCreateProposalAccount(
     instructions,
@@ -136,8 +141,9 @@ const createSquadsWithdrawalProposal = async (
     managerData.squad,
     3, // TODO: need to pull on-chain Squad data to figure out nonce
     0,
-    "Withdrawal",
-    `[SLIDEPROPOSAL]: This withdraws the balance of your Slide expense manager (${expenseManager.publicKey.toString()}) to the Squads SOL treasury`,
+    "[SLIDE PROPOSAL] Withdrawal",
+    // TODO: provide input for lamports
+    `lamports: 100\nmanager: ${expenseManager.publicKey.toString()}\ntreasury: ${squadTreasury.toString()}`,
     2,
     ["Approve", "Deny"]
   );
