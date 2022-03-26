@@ -14,7 +14,10 @@ import BN from "bn.js";
 import { Slide, utils } from "@slidexyz/slide-sdk";
 import { Program } from "@project-serum/anchor";
 import { useState } from "react";
-import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
+import {
+  getAccessRecordAddressAndBump,
+  getProposalExecutionAddressAndBump,
+} from "@slidexyz/slide-sdk/lib/address";
 
 const createSquad = async (
   program: Program<Slide>,
@@ -101,6 +104,11 @@ const executeAccessProposal = async (
     expenseManagerPubkey,
     user
   );
+  const [proposalExecution] = getProposalExecutionAddressAndBump(
+    program.programId,
+    expenseManagerPubkey,
+    proposalPubkey
+  );
   const [squadMint] = await getSquadMintAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     squadPubkey
@@ -113,6 +121,7 @@ const executeAccessProposal = async (
       expenseManager: expenseManagerPubkey,
       squad: squadPubkey,
       squadMint,
+      proposalExecution,
       member: user,
       signer: user,
     })
@@ -140,6 +149,11 @@ const executeWithdrawalProposal = async (
     alert("Invalid pubkeys");
     return;
   }
+  const [proposalExecution] = getProposalExecutionAddressAndBump(
+    program.programId,
+    expenseManagerPubkey,
+    proposalPubkey
+  );
   const [squadMint] = await getSquadMintAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     squadPubkey
@@ -156,6 +170,7 @@ const executeWithdrawalProposal = async (
       squad: squadPubkey,
       squadMint,
       squadTreasury,
+      proposalExecution,
       signer: user,
     })
     .rpc();

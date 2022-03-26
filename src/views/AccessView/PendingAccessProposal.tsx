@@ -8,7 +8,10 @@ import { FC, useState } from "react";
 import { Program } from "@project-serum/anchor";
 import { Slide } from "@slidexyz/slide-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
+import {
+  getAccessRecordAddressAndBump,
+  getProposalExecutionAddressAndBump,
+} from "@slidexyz/slide-sdk/lib/address";
 import { Loader } from "../../components";
 import { useSlideProgram } from "../../utils/useSlide";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -33,6 +36,11 @@ const executeAccessProposal = async (
     expenseManager.publicKey,
     user
   );
+  const [proposalExecution] = getProposalExecutionAddressAndBump(
+    program.programId,
+    expenseManager.publicKey,
+    proposal.pubkey
+  );
   const [squadMint] = await getSquadMintAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     proposal.account.squad
@@ -45,6 +53,7 @@ const executeAccessProposal = async (
       expenseManager: expenseManager.publicKey,
       squad: proposal.account.squad,
       squadMint,
+      proposalExecution,
       member: user,
       signer: user,
     })

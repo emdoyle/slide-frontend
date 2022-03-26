@@ -18,7 +18,6 @@ export type BasicComboboxProps<T> = {
   maxOptions?: number;
 };
 
-// TODO: disabled styling; label
 export function BasicCombobox<T>({
   value,
   setValue,
