@@ -187,7 +187,7 @@ const CreateExpensePackageModal = ({
             type="number"
             placeholder="Amount (in SOL)"
             className="input input-bordered w-full bg-white text-black"
-            max={1_000_000 * LAMPORTS_PER_SOL}
+            max={1_000_000}
             min={0}
             step={1 / LAMPORTS_PER_SOL}
             value={quantity}
@@ -205,7 +205,7 @@ const CreateExpensePackageModal = ({
                   Alert.show("Success");
                   close(true);
                 })
-                .catch(console.error)
+                .catch((err: Error) => Alert.error(err.message))
                 .finally(() => setIsLoading(false));
             }}
           >

@@ -3,7 +3,12 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Loader, Nav } from "components";
 
 import styles from "./index.module.css";
-import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import {
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  TransactionInstruction,
+} from "@solana/web3.js";
 import { useSlideProgram } from "../../utils/useSlide";
 import { useRouter } from "next/router";
 import { ExpenseManager, ExpenseManagerItem } from "../../types";
@@ -123,7 +128,8 @@ const createSPLWithdrawalProposal = async (
 const createSquadsWithdrawalProposal = async (
   program: Program<Slide>,
   user: PublicKey,
-  expenseManager: ExpenseManagerItem
+  expenseManager: ExpenseManagerItem,
+  lamports: number
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.squad) {
@@ -142,8 +148,7 @@ const createSquadsWithdrawalProposal = async (
     3, // TODO: need to pull on-chain Squad data to figure out nonce
     0,
     "[SLIDE PROPOSAL] Withdrawal",
-    // TODO: provide input for lamports
-    `lamports: 100\nmanager: ${expenseManager.publicKey.toString()}\ntreasury: ${squadTreasury.toString()}`,
+    `lamports: ${lamports}\nmanager: ${expenseManager.publicKey.toString()}\ntreasury: ${squadTreasury.toString()}`,
     2,
     ["Approve", "Deny"]
   );
@@ -164,6 +169,7 @@ export const FundingView: FC = ({}) => {
   const [withdrawLoading, setWithdrawLoading] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
+  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
 
   useEffect(() => {
     async function getExpenseManager() {
@@ -181,14 +187,29 @@ export const FundingView: FC = ({}) => {
     getExpenseManager().finally(() => setIsLoading(false));
   }, [program?.programId, query?.pubkey]);
 
-  const withdrawFromManager = async () => {
+  const withdrawFromManager = async (
+    solWithdrawalAmount: string
+  ): Promise<string | undefined> => {
     if (!program || !expenseManager || !userPublicKey) {
-      Alert.show("Please connect your wallet");
-      return;
+      throw new Error("Please connect your wallet");
     }
+    let solWithdrawalNum;
+    try {
+      solWithdrawalNum = Number(solWithdrawalAmount);
+    } catch {
+      throw new Error("Withdrawal amount could not be parsed as a number.");
+    }
+    if (managerBalance && solWithdrawalNum > managerBalance) {
+      throw new Error(
+        `Withdrawal amount (${solWithdrawalNum}) exceeds balance of Expense Manager (${managerBalance}).`
+      );
+    }
+    const lamports = Number(solWithdrawalAmount) * LAMPORTS_PER_SOL;
+
     const managerData = expenseManager.account;
     let alertText;
     if (managerData.realm && managerData.governanceAuthority) {
+      // TODO: use lamports as input
       alertText = await createSPLWithdrawalProposal(
         program,
         connection,
@@ -199,13 +220,12 @@ export const FundingView: FC = ({}) => {
       alertText = await createSquadsWithdrawalProposal(
         program,
         userPublicKey,
-        expenseManager
+        expenseManager,
+        lamports
       );
     }
 
-    if (alertText) {
-      Alert.show(alertText);
-    }
+    return alertText;
   };
 
   const { balance: managerBalance } = useBalance(
@@ -215,7 +235,7 @@ export const FundingView: FC = ({}) => {
   if (managerBalance) {
     balanceDisplay = `(Balance: ~${managerBalance.toFixed(2)}◎)`;
   } else {
-    balanceDisplay = "";
+    balanceDisplay = "(Balance: 0.00◎)";
   }
 
   return (
@@ -233,35 +253,59 @@ export const FundingView: FC = ({}) => {
                     <Loader />
                   </div>
                 )}
-                {!isLoading && balanceDisplay && (
-                  <p className="text-xl">{balanceDisplay}</p>
-                )}
                 {connected && !isLoading && expenseManager && (
                   <div className="flex flex-col gap-2 justify-center mt-5">
-                    <p className="text-xl">
-                      Deposit funds into your Slide Expense Manager
+                    <p className="text-xl mb-5">
+                      Deposit funds into your Slide Expense Manager using the
+                      address below
                     </p>
-                    <p>{expenseManager.publicKey.toString()}</p>
-                    {/*<button className="btn btn-primary">Copy</button>*/}
+                    <div className="card text-black bg-gray-400">
+                      <div className="card-body">
+                        <h3 className="card-title">
+                          Expense Manager Address {balanceDisplay}
+                        </h3>
+
+                        <p>{expenseManager.publicKey.toString()}</p>
+                        <div className="card-actions justify-end">
+                          <button className="btn btn-primary">Copy</button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {connected && (
+                {connected && !!managerBalance && (
                   <div className="flex flex-col gap-2 justify-center mt-10">
                     <p className="text-xl">
                       Create a Proposal to withdraw funds from your Slide
                       Expense Manager
                     </p>
+                    <label className="label">
+                      <span className="label-text">Withdrawal amount</span>
+                    </label>
+                    <input
+                      disabled={withdrawLoading}
+                      type="number"
+                      placeholder="Amount (in SOL)"
+                      className="input input-bordered"
+                      max={managerBalance}
+                      min={0}
+                      step={1 / LAMPORTS_PER_SOL}
+                      value={withdrawAmount}
+                      onChange={(event) =>
+                        setWithdrawAmount(event.target.value)
+                      }
+                    />
                     <button
                       disabled={withdrawLoading}
                       className="btn btn-error"
                       onClick={() => {
                         setWithdrawLoading(true);
-                        withdrawFromManager()
-                          .then(() => {
-                            Alert.show("Success");
+                        withdrawFromManager(withdrawAmount)
+                          .then((alertText?) => {
+                            Alert.show(alertText ?? "Success");
                           })
-                          .catch(console.error)
+                          .catch((err: Error) => Alert.error(err.message))
                           .finally(() => setWithdrawLoading(false));
                       }}
                     >
