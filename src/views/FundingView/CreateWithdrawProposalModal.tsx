@@ -99,12 +99,14 @@ export const CreateWithdrawProposalModal = ({
                 setIsSubmitting(true);
                 withdrawFromManager(withdrawAmount)
                   .then((alertText?) => {
-                    Alert.show(alertText ?? "Success");
-                  })
-                  .catch((err: Error) => Alert.error(err.message))
-                  .finally(() => {
                     setIsSubmitting(false);
-                    close();
+                    Alert.show(alertText ?? "Success");
+                    close(true);
+                  })
+                  .catch((err: Error) => {
+                    setIsSubmitting(false);
+                    Alert.error(err.message);
+                    close(false);
                   });
               }}
             >

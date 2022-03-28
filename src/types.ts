@@ -1,6 +1,7 @@
 import { AccountInfo, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Governance, ProgramAccount, Realm } from "@solana/spl-governance";
+import { ProposalItem } from "@slidexyz/squads-sdk";
 
 export type ExpenseManager = {
   bump: number;
@@ -55,4 +56,8 @@ export type TreasuryItem = {
 };
 export type TreasuryWithGovernance = TreasuryItem & {
   governance: GovernanceItem;
+};
+
+export type ProposalWithExecution = ProposalItem & {
+  slideExecuted: boolean;
 };

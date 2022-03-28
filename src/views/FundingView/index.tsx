@@ -1,17 +1,29 @@
 import { FC, useEffect, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Loader, Nav, PromptConnectWallet } from "components";
 
 import styles from "./index.module.css";
 import { PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { useRouter } from "next/router";
-import { ExpenseManager, ExpenseManagerItem } from "types";
+import {
+  ExpenseManager,
+  ExpenseManagerItem,
+  ProposalWithExecution,
+} from "types";
 import { useBalance } from "utils/useBalance";
 import { CreateWithdrawProposalModal } from "./CreateWithdrawProposalModal";
-import { PendingWithdrawals } from "./PendingWithdrawals";
+import { Withdrawals } from "./Withdrawals";
+import {
+  getProposals,
+  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+} from "@slidexyz/squads-sdk";
+import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
+import { useAlert } from "react-alert";
 
 export const FundingView: FC = ({}) => {
+  const Alert = useAlert();
+  const { connection } = useConnection();
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const { query } = useRouter();
@@ -19,6 +31,7 @@ export const FundingView: FC = ({}) => {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
+  const [proposals, setProposals] = useState<ProposalWithExecution[]>([]);
 
   async function fetchExpenseManager() {
     if (program && userPublicKey && query?.pubkey) {
@@ -32,10 +45,75 @@ export const FundingView: FC = ({}) => {
     }
   }
 
+  async function fetchProposals() {
+    if (program && expenseManager && expenseManager.account.squad) {
+      setIsLoading(true);
+      try {
+        const proposalItems = await getProposals(
+          SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+          connection,
+          expenseManager.account.squad
+        );
+        const proposalExecutions = proposalItems.map(
+          (proposal) =>
+            getProposalExecutionAddressAndBump(
+              program.programId,
+              expenseManager.publicKey,
+              proposal.pubkey
+            )[0]
+        );
+        const executionAccountInfos = await connection.getMultipleAccountsInfo(
+          proposalExecutions
+        );
+        const proposalsWithExecution: ProposalWithExecution[] =
+          proposalItems.map((proposal, idx) => ({
+            ...proposal,
+            slideExecuted: executionAccountInfos[idx] !== null,
+          }));
+        setProposals(proposalsWithExecution);
+      } catch (err) {
+        if (err instanceof Error) {
+          Alert.error(err.message);
+        } else {
+          Alert.error("An unknown error occurred");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }
+
+  async function refetchExecutionStatus() {
+    if (program && proposals && expenseManager) {
+      const proposalExecutions = proposals.map(
+        (proposal) =>
+          getProposalExecutionAddressAndBump(
+            program.programId,
+            expenseManager.publicKey,
+            proposal.pubkey
+          )[0]
+      );
+      const executionAccountInfos = await connection.getMultipleAccountsInfo(
+        proposalExecutions
+      );
+      const proposalsWithExecution: ProposalWithExecution[] = proposals.map(
+        (proposal, idx) => ({
+          ...proposal,
+          slideExecuted: executionAccountInfos[idx] !== null,
+        })
+      );
+      setProposals(proposalsWithExecution);
+    }
+  }
+
   useEffect(() => {
     setIsLoading(true);
     fetchExpenseManager().finally(() => setIsLoading(false));
   }, [program?.programId, query?.pubkey]);
+
+  useEffect(() => {
+    fetchProposals();
+  }, [expenseManager?.account.squad?.toString()]);
 
   const { balance: managerBalance } = useBalance(
     expenseManager?.publicKey ?? null
@@ -84,29 +162,30 @@ export const FundingView: FC = ({}) => {
                       <div className="flex justify-between items-center">
                         <p>Withdraw funds with a Proposal</p>
                         <button
-                          className="btn"
+                          className="btn btn-primary"
                           onClick={() => setModalOpen(true)}
                         >
                           Withdraw
                         </button>
                       </div>
                     </div>
-
-                    <div className="flex flex-col justify-start text-left my-4">
-                      <h3 className="text-2xl">Pending Withdrawals</h3>
-                      <PendingWithdrawals expenseManager={expenseManager} />
-                    </div>
-
-                    <div className="flex flex-col justify-start text-left my-4">
-                      <h3 className="text-2xl">History</h3>
-                    </div>
+                    <Withdrawals
+                      expenseManager={expenseManager}
+                      proposals={proposals}
+                      refetchExecutionStatus={refetchExecutionStatus}
+                    />
                   </>
                 )}
 
                 {connected && expenseManager && !!managerBalance && (
                   <CreateWithdrawProposalModal
                     open={modalOpen}
-                    close={() => setModalOpen(false)}
+                    close={(success) => {
+                      setModalOpen(false);
+                      if (success) {
+                        fetchProposals();
+                      }
+                    }}
                     expenseManager={expenseManager}
                     managerBalance={managerBalance}
                   />
