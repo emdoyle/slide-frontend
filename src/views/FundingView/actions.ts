@@ -157,7 +157,7 @@ export const createSquadsWithdrawalProposal = async (
 export const executeWithdrawalProposal = async (
   program: Program<Slide>,
   user: PublicKey,
-  proposal: ProposalItem,
+  proposal: PublicKey,
   expenseManager: ExpenseManagerItem
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
@@ -167,7 +167,7 @@ export const executeWithdrawalProposal = async (
   const [proposalExecution] = getProposalExecutionAddressAndBump(
     program.programId,
     expenseManager.publicKey,
-    proposal.pubkey
+    proposal
   );
   const [squadMint] = await getSquadMintAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
@@ -180,7 +180,7 @@ export const executeWithdrawalProposal = async (
   await program.methods
     .squadsExecuteWithdrawalProposal()
     .accounts({
-      proposal: proposal.pubkey,
+      proposal,
       expenseManager: expenseManager.publicKey,
       squad: managerData.squad,
       squadMint,

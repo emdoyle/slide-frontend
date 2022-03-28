@@ -58,6 +58,11 @@ export type TreasuryWithGovernance = TreasuryItem & {
   governance: GovernanceItem;
 };
 
-export type ProposalWithExecution = ProposalItem & {
-  slideExecuted: boolean;
+export type ProposalInfo = {
+  pubkey: PublicKey;
+  title: string;
+  description: string;
+  executeReady: boolean;
+  executed: boolean;
+  executedAt?: BN; // UnixTimestamp
 };

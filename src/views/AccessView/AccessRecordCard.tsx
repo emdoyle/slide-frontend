@@ -1,6 +1,6 @@
 import { FC } from "react";
 import { AccessRecordItem } from "types";
-import { displayPubkey } from "../../utils/formatting";
+import { displayPubkey } from "utils/formatting";
 
 type Props = {
   accessRecord: AccessRecordItem;
@@ -16,6 +16,7 @@ export const AccessRecordCard: FC<Props> = ({ accessRecord }) => {
         {accessRecord.account.role.reviewer && (
           <p className="text-black">Reviewer</p>
         )}
+        {accessRecord.account.role.admin && <p className="text-black">Admin</p>}
       </div>
     </div>
   );

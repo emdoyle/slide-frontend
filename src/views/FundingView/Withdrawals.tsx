@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { ProposalItem } from "@slidexyz/squads-sdk";
 import { useAlert } from "react-alert";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { ExpenseManagerItem, ProposalWithExecution } from "types";
+import { ExpenseManagerItem, ProposalInfo } from "types";
 import { Loader } from "components";
 import { useSlideProgram } from "utils/useSlide";
 import { executeWithdrawalProposal } from "./actions";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { displayPubkey } from "../../utils/formatting";
 
 export const Withdrawals = ({
   expenseManager,
@@ -14,19 +14,19 @@ export const Withdrawals = ({
   refetchExecutionStatus,
 }: {
   expenseManager: ExpenseManagerItem;
-  proposals: ProposalWithExecution[];
+  proposals: ProposalInfo[];
   refetchExecutionStatus?: () => void;
 }) => {
   const withdrawalProposals = proposals.filter((proposal) =>
-    proposal.account.title.includes("Withdrawal")
+    proposal.title.includes("Withdrawal")
   );
   if (!withdrawalProposals) return null;
 
   const pendingWithdrawalProposals = withdrawalProposals.filter(
-    (proposal) => !proposal.slideExecuted
+    (proposal) => !proposal.executed
   );
   const withdrawalHistory = withdrawalProposals.filter(
-    (proposal) => proposal.slideExecuted
+    (proposal) => proposal.executed
   );
 
   return (
@@ -63,14 +63,12 @@ export const Withdrawals = ({
   );
 };
 
-const parseProposal = (proposal: ProposalItem): [string, string] => {
-  const proposalDescriptionLines = proposal.account.description
-    .trimEnd()
-    .split("\n");
+const parseProposal = (proposal: ProposalInfo): [string, string] => {
+  const proposalDescriptionLines = proposal.description.trimEnd().split("\n");
   let timeDisplay;
-  if (proposal.account.closeTimestamp) {
+  if (proposal.executedAt) {
     timeDisplay = new Date(
-      proposal.account.closeTimestamp.muln(1000).toNumber()
+      proposal.executedAt.muln(1000).toNumber()
     ).toLocaleDateString("en-US", { year: "2-digit", month: "2-digit" });
   } else {
     timeDisplay = "";
@@ -81,12 +79,11 @@ const parseProposal = (proposal: ProposalItem): [string, string] => {
       Number(proposalDescriptionLines[0].slice(10)) / LAMPORTS_PER_SOL;
     const manager = proposalDescriptionLines[1].slice(9);
     const treasury = proposalDescriptionLines[2].slice(10);
-    proposalDisplay = `Withdraw ${solAmount}◎ ${manager.slice(
-      0,
-      4
-    )}..${manager.slice(-4)} -> ${treasury.slice(0, 4)}..${treasury.slice(-4)}`;
+    proposalDisplay = `Withdraw ${solAmount}◎ ${displayPubkey(
+      manager
+    )} -> ${displayPubkey(treasury)}`;
   } catch {
-    proposalDisplay = proposal.account.title;
+    proposalDisplay = proposal.title;
   }
 
   return [proposalDisplay, timeDisplay];
@@ -97,7 +94,7 @@ export const PendingWithdrawalProposal = ({
   expenseManager,
   refetchHistory,
 }: {
-  proposal: ProposalItem;
+  proposal: ProposalInfo;
   expenseManager: ExpenseManagerItem;
   refetchHistory?: () => void;
 }) => {
@@ -116,7 +113,7 @@ export const PendingWithdrawalProposal = ({
       const alertText = await executeWithdrawalProposal(
         program,
         userPublicKey,
-        proposal,
+        proposal.pubkey,
         expenseManager
       );
       Alert.show(alertText);
@@ -142,7 +139,7 @@ export const PendingWithdrawalProposal = ({
           </div>
         )}
         {/* TODO: what logic needs to be replicated from Program's validation of Proposal? */}
-        {!isLoading && proposal.account.executeReady ? (
+        {!isLoading && proposal.executeReady ? (
           <button
             className="btn w-24"
             onClick={() => {
@@ -167,7 +164,7 @@ export const PendingWithdrawalProposal = ({
 export const WithdrawalHistoryCard = ({
   proposal,
 }: {
-  proposal: ProposalItem;
+  proposal: ProposalInfo;
 }) => {
   const [withdrawalDisplay, timeDisplay] = parseProposal(proposal);
   return (

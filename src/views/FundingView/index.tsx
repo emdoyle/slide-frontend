@@ -6,11 +6,7 @@ import styles from "./index.module.css";
 import { PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { useRouter } from "next/router";
-import {
-  ExpenseManager,
-  ExpenseManagerItem,
-  ProposalWithExecution,
-} from "types";
+import { ExpenseManager, ExpenseManagerItem, ProposalInfo } from "types";
 import { useBalance } from "utils/useBalance";
 import { CreateWithdrawProposalModal } from "./CreateWithdrawProposalModal";
 import { Withdrawals } from "./Withdrawals";
@@ -20,6 +16,9 @@ import {
 } from "@slidexyz/squads-sdk";
 import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 import { useAlert } from "react-alert";
+import { SPLProposalToInfo, squadsProposalToInfo } from "../../utils/proposals";
+import { getAllProposals } from "@solana/spl-governance";
+import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 
 export const FundingView: FC = ({}) => {
   const Alert = useAlert();
@@ -31,7 +30,7 @@ export const FundingView: FC = ({}) => {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
-  const [proposals, setProposals] = useState<ProposalWithExecution[]>([]);
+  const [proposals, setProposals] = useState<ProposalInfo[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState<boolean>(false);
 
   async function fetchExpenseManager() {
@@ -47,31 +46,53 @@ export const FundingView: FC = ({}) => {
   }
 
   async function fetchProposals() {
-    if (program && expenseManager && expenseManager.account.squad) {
+    if (program && expenseManager) {
       setProposalsLoading(true);
       try {
-        const proposalItems = await getProposals(
-          SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-          connection,
-          expenseManager.account.squad
-        );
-        const proposalExecutions = proposalItems.map(
-          (proposal) =>
-            getProposalExecutionAddressAndBump(
-              program.programId,
-              expenseManager.publicKey,
-              proposal.pubkey
-            )[0]
-        );
-        const executionAccountInfos = await connection.getMultipleAccountsInfo(
-          proposalExecutions
-        );
-        const proposalsWithExecution: ProposalWithExecution[] =
-          proposalItems.map((proposal, idx) => ({
-            ...proposal,
-            slideExecuted: executionAccountInfos[idx] !== null,
-          }));
-        setProposals(proposalsWithExecution);
+        if (expenseManager.account.squad) {
+          // Fetch Squads proposals, map into ProposalInfo
+          const proposalItems = await getProposals(
+            SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+            connection,
+            expenseManager.account.squad
+          );
+          const proposalExecutions = proposalItems.map(
+            (proposal) =>
+              getProposalExecutionAddressAndBump(
+                program.programId,
+                expenseManager.publicKey,
+                proposal.pubkey
+              )[0]
+          );
+          const executionAccountInfos =
+            await connection.getMultipleAccountsInfo(proposalExecutions);
+          const proposalInfos: ProposalInfo[] = proposalItems.map(
+            (proposal, idx) =>
+              squadsProposalToInfo(
+                proposal,
+                executionAccountInfos[idx] !== null
+              )
+          );
+          setProposals(proposalInfos);
+        } else if (
+          expenseManager.account.realm &&
+          expenseManager.account.governanceAuthority
+        ) {
+          // Fetch SPL Gov proposals, map into ProposalInfo
+          const proposalItems = await getAllProposals(
+            connection,
+            SPL_GOV_PROGRAM_ID,
+            expenseManager.account.realm
+          );
+          // TODO: flattening here is required because we pulled all proposals
+          //   regardless of which governance they were created under
+          //   otherwise could restrict it to just the governance attached to
+          //   the native treasury, but seems unnecessary
+          const proposalInfos: ProposalInfo[] = proposalItems
+            .flat()
+            .map(SPLProposalToInfo);
+          setProposals(proposalInfos);
+        }
       } catch (err) {
         if (err instanceof Error) {
           Alert.error(err.message);
@@ -85,7 +106,7 @@ export const FundingView: FC = ({}) => {
   }
 
   async function refetchExecutionStatus() {
-    if (program && expenseManager) {
+    if (program && expenseManager && expenseManager.account.squad) {
       const proposalExecutions = proposals.map(
         (proposal) =>
           getProposalExecutionAddressAndBump(
@@ -97,10 +118,10 @@ export const FundingView: FC = ({}) => {
       const executionAccountInfos = await connection.getMultipleAccountsInfo(
         proposalExecutions
       );
-      const proposalsWithExecution: ProposalWithExecution[] = proposals.map(
+      const proposalsWithExecution: ProposalInfo[] = proposals.map(
         (proposal, idx) => ({
           ...proposal,
-          slideExecuted: executionAccountInfos[idx] !== null,
+          executed: executionAccountInfos[idx] !== null,
         })
       );
       setProposals(proposalsWithExecution);
