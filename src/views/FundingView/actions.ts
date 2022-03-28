@@ -15,10 +15,13 @@ import {
 } from "@solana/spl-governance";
 import {
   getSquad,
+  getSquadMintAddressAndBump,
   getSquadTreasuryAddressAndBump,
+  ProposalItem,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
+import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 
 export const createSPLWithdrawalProposal = async (
   program: Program<Slide>,
@@ -28,7 +31,7 @@ export const createSPLWithdrawalProposal = async (
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not set up for SPL";
+    throw new Error("Manager not set up for SPL");
   }
   const proposalCount = (
     await getAllProposals(
@@ -120,7 +123,7 @@ export const createSquadsWithdrawalProposal = async (
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    return "Manager is not setup for Squads";
+    throw new Error("Manager is not set up for Squads");
   }
   const squad = await getSquad(connection, managerData.squad);
   const [squadTreasury] = await getSquadTreasuryAddressAndBump(
@@ -149,4 +152,42 @@ export const createSquadsWithdrawalProposal = async (
     0,
     4
   )}..${proposalAddress.slice(-4)}`;
+};
+
+export const executeWithdrawalProposal = async (
+  program: Program<Slide>,
+  user: PublicKey,
+  proposal: ProposalItem,
+  expenseManager: ExpenseManagerItem
+): Promise<string | undefined> => {
+  const managerData = expenseManager.account;
+  if (!managerData.squad) {
+    throw new Error("Manager is not set up for Squads");
+  }
+  const [proposalExecution] = getProposalExecutionAddressAndBump(
+    program.programId,
+    expenseManager.publicKey,
+    proposal.pubkey
+  );
+  const [squadMint] = await getSquadMintAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    managerData.squad
+  );
+  const [squadTreasury] = await getSquadTreasuryAddressAndBump(
+    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    managerData.squad
+  );
+  await program.methods
+    .squadsExecuteWithdrawalProposal()
+    .accounts({
+      proposal: proposal.pubkey,
+      expenseManager: expenseManager.publicKey,
+      squad: managerData.squad,
+      squadMint,
+      squadTreasury,
+      proposalExecution,
+      signer: user,
+    })
+    .rpc();
+  return `Withdrawal Proposal executed!`;
 };

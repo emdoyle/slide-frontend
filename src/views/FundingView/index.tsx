@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import { ExpenseManager, ExpenseManagerItem } from "types";
 import { useBalance } from "utils/useBalance";
 import { CreateWithdrawProposalModal } from "./CreateWithdrawProposalModal";
+import { PendingWithdrawals } from "./PendingWithdrawals";
 
 export const FundingView: FC = ({}) => {
   const { connected, publicKey: userPublicKey } = useWallet();
@@ -19,20 +20,21 @@ export const FundingView: FC = ({}) => {
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
 
-  useEffect(() => {
-    async function getExpenseManager() {
-      if (program && userPublicKey && query?.pubkey) {
-        const expenseManagerPubkey = new PublicKey(query.pubkey);
-        const expenseManagerAccount: ExpenseManager =
-          await program.account.expenseManager.fetch(expenseManagerPubkey);
-        setExpenseManager({
-          account: expenseManagerAccount,
-          publicKey: expenseManagerPubkey,
-        });
-      }
+  async function fetchExpenseManager() {
+    if (program && userPublicKey && query?.pubkey) {
+      const expenseManagerPubkey = new PublicKey(query.pubkey);
+      const expenseManagerAccount: ExpenseManager =
+        await program.account.expenseManager.fetch(expenseManagerPubkey);
+      setExpenseManager({
+        account: expenseManagerAccount,
+        publicKey: expenseManagerPubkey,
+      });
     }
+  }
+
+  useEffect(() => {
     setIsLoading(true);
-    getExpenseManager().finally(() => setIsLoading(false));
+    fetchExpenseManager().finally(() => setIsLoading(false));
   }, [program?.programId, query?.pubkey]);
 
   const { balance: managerBalance } = useBalance(
@@ -61,32 +63,45 @@ export const FundingView: FC = ({}) => {
                   </div>
                 )}
                 {connected && !isLoading && expenseManager && (
-                  <div className="flex flex-col gap-2 justify-center mt-5">
-                    <p className="text-xl mb-5">
-                      Deposit funds into your Slide Expense Manager using the
-                      address below
-                    </p>
-                    <div className="card text-black bg-gray-400">
-                      <div className="card-body">
-                        <h3 className="card-title">
-                          Expense Manager Address {balanceDisplay}
-                        </h3>
+                  <>
+                    <div className="flex flex-col gap-2 justify-center mt-5">
+                      <p className="text-xl mb-5">
+                        Deposit funds into your Slide Expense Manager using the
+                        address below.
+                      </p>
+                      <div className="card text-black bg-gray-400">
+                        <div className="card-body">
+                          <h3 className="card-title">
+                            Expense Manager Address {balanceDisplay}
+                          </h3>
 
-                        <p>{expenseManager.publicKey.toString()}</p>
+                          <p>{expenseManager.publicKey.toString()}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                    <div className="flex flex-col justify-start text-left my-4">
+                      <h3 className="text-2xl">Create Withdrawal</h3>
+                      <div className="flex justify-between items-center">
+                        <p>Withdraw funds with a Proposal</p>
+                        <button
+                          className="btn"
+                          onClick={() => setModalOpen(true)}
+                        >
+                          Withdraw
+                        </button>
+                      </div>
+                    </div>
 
-                <div className="flex flex-col justify-start  text-left my-4">
-                  <h3 className="text-2xl">Withdrawals</h3>
-                  <div className="flex justify-between items-center">
-                    <p>Withdraw funds with a Proposal</p>
-                    <button className="btn" onClick={() => setModalOpen(true)}>
-                      Withdraw
-                    </button>
-                  </div>
-                </div>
+                    <div className="flex flex-col justify-start text-left my-4">
+                      <h3 className="text-2xl">Pending Withdrawals</h3>
+                      <PendingWithdrawals expenseManager={expenseManager} />
+                    </div>
+
+                    <div className="flex flex-col justify-start text-left my-4">
+                      <h3 className="text-2xl">History</h3>
+                    </div>
+                  </>
+                )}
 
                 {connected && expenseManager && !!managerBalance && (
                   <CreateWithdrawProposalModal
