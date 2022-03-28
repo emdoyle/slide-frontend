@@ -108,9 +108,6 @@ export const PendingAccessProposal: FC<Props> = ({
           </div>
         )}
         {/* TODO: More state logic (failed, executed) */}
-        {/* Slightly complicated because the execution happens on slide... */}
-        {/* Is there any protection against multiple execution? */}
-        {/* Withdraw absolutely is a problem */}
         {!isLoading && proposal.account.executeReady ? (
           <button
             className="btn w-24"
