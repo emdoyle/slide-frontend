@@ -327,7 +327,7 @@ const ProposalContent = ({
     );
   }
 
-  if (!pendingAccessProposals) return null;
+  if (!pendingAccessProposals.length) return null;
 
   return (
     <div className="flex flex-col gap-4 my-10">
@@ -366,15 +366,19 @@ const AccessRecordContent = ({
     getAccessRecords().finally(() => setIsLoading(false));
   }, [program?.programId]);
 
+  if (isLoading) {
+    return (
+      <div>
+        <Loader />
+      </div>
+    );
+  }
+
+  if (!accessRecords.length) return null;
+
   return (
     <div className="my-10">
-      {isLoading ? (
-        <div>
-          <Loader />
-        </div>
-      ) : (
-        <AccessRecordList accessRecords={accessRecords} />
-      )}
+      <AccessRecordList accessRecords={accessRecords} />
     </div>
   );
 };
@@ -385,13 +389,16 @@ type AccessRecordListProps = {
 
 const AccessRecordList = ({ accessRecords }: AccessRecordListProps) => {
   return (
-    <div className="flex flex-col gap-4">
-      {accessRecords.map((accessRecord) => (
-        <AccessRecordCard
-          key={accessRecord.publicKey.toString()}
-          accessRecord={accessRecord}
-        />
-      ))}
+    <div className="flex flex-col gap-4 justify-start text-left">
+      <h3 className="text-2xl">Officers</h3>
+      <div className="flex flex-col gap-4 my-4">
+        {accessRecords.map((accessRecord) => (
+          <AccessRecordCard
+            key={accessRecord.publicKey.toString()}
+            accessRecord={accessRecord}
+          />
+        ))}
+      </div>
     </div>
   );
 };

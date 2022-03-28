@@ -32,6 +32,7 @@ export const FundingView: FC = ({}) => {
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
   const [proposals, setProposals] = useState<ProposalWithExecution[]>([]);
+  const [proposalsLoading, setProposalsLoading] = useState<boolean>(false);
 
   async function fetchExpenseManager() {
     if (program && userPublicKey && query?.pubkey) {
@@ -47,7 +48,7 @@ export const FundingView: FC = ({}) => {
 
   async function fetchProposals() {
     if (program && expenseManager && expenseManager.account.squad) {
-      setIsLoading(true);
+      setProposalsLoading(true);
       try {
         const proposalItems = await getProposals(
           SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
@@ -78,13 +79,13 @@ export const FundingView: FC = ({}) => {
           Alert.error("An unknown error occurred");
         }
       } finally {
-        setIsLoading(false);
+        setProposalsLoading(false);
       }
     }
   }
 
   async function refetchExecutionStatus() {
-    if (program && proposals && expenseManager) {
+    if (program && expenseManager) {
       const proposalExecutions = proposals.map(
         (proposal) =>
           getProposalExecutionAddressAndBump(
@@ -169,11 +170,17 @@ export const FundingView: FC = ({}) => {
                         </button>
                       </div>
                     </div>
-                    <Withdrawals
-                      expenseManager={expenseManager}
-                      proposals={proposals}
-                      refetchExecutionStatus={refetchExecutionStatus}
-                    />
+                    {proposalsLoading ? (
+                      <div>
+                        <Loader />
+                      </div>
+                    ) : (
+                      <Withdrawals
+                        expenseManager={expenseManager}
+                        proposals={proposals}
+                        refetchExecutionStatus={refetchExecutionStatus}
+                      />
+                    )}
                   </>
                 )}
 
