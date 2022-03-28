@@ -135,7 +135,7 @@ export const FundingView: FC = ({}) => {
 
   useEffect(() => {
     fetchProposals();
-  }, [expenseManager?.account.squad?.toString()]);
+  }, [expenseManager?.publicKey.toString()]);
 
   const { balance: managerBalance } = useBalance(
     expenseManager?.publicKey ?? null
@@ -179,10 +179,12 @@ export const FundingView: FC = ({}) => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col justify-start text-left my-4">
-                      <h3 className="text-2xl">Create Withdrawal</h3>
+                    <div className="flex flex-col justify-start text-left my-6">
                       <div className="flex justify-between items-center">
-                        <p>Withdraw funds with a Proposal</p>
+                        <div className="flex flex-col gap-2">
+                          <h3 className="text-2xl">Create Withdrawal</h3>
+                          <p>Withdraw funds with a Proposal</p>
+                        </div>
                         <button
                           className="btn btn-primary"
                           onClick={() => setModalOpen(true)}
@@ -205,7 +207,7 @@ export const FundingView: FC = ({}) => {
                   </>
                 )}
 
-                {connected && expenseManager && !!managerBalance && (
+                {connected && expenseManager && managerBalance !== null && (
                   <CreateWithdrawProposalModal
                     open={modalOpen}
                     close={(success) => {

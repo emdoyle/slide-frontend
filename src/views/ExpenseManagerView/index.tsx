@@ -65,11 +65,8 @@ export const ExpenseManagerView: FC = ({}) => {
           <div className="hero min-h-16 p-0 pt-10">
             <div className="text-center hero-content w-full">
               <div className="w-full">
-                <h1 className="mb-5 text-5xl">Your DAOs</h1>
-
-                <div className="w-full min-w-full">
-                  <p className="mb-5">Manage expenses for your DAOs</p>
-                </div>
+                <h1 className="mb-5 text-5xl">Expense Managers</h1>
+                <p className="mb-5">Manage expenses for your DAO</p>
 
                 {connected && (
                   <button

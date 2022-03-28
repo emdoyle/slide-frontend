@@ -7,7 +7,11 @@ import { useSlideProgram } from "utils/useSlide";
 import { executeWithdrawalProposal } from "./actions";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { displayPubkey } from "utils/formatting";
-import { isWithdrawal } from "utils/proposals";
+import {
+  isWithdrawal,
+  parseSPLProposal,
+  parseSquadsProposal,
+} from "utils/proposals";
 
 export const Withdrawals = ({
   expenseManager,
@@ -18,6 +22,7 @@ export const Withdrawals = ({
   proposals: ProposalInfo[];
   refetchExecutionStatus?: () => void;
 }) => {
+  console.log(proposals);
   const withdrawalProposals = proposals.filter(isWithdrawal);
   if (!withdrawalProposals) return null;
 
@@ -30,7 +35,7 @@ export const Withdrawals = ({
 
   return (
     <>
-      {pendingWithdrawalProposals && (
+      {!!pendingWithdrawalProposals.length && (
         <div className="flex flex-col justify-start text-left my-4">
           <h3 className="text-2xl">Pending Withdrawals</h3>
           <div className="flex flex-col gap-4 my-4">
@@ -45,7 +50,7 @@ export const Withdrawals = ({
           </div>
         </div>
       )}
-      {withdrawalHistory && (
+      {!!withdrawalHistory.length && (
         <div className="flex flex-col justify-start text-left my-4">
           <h3 className="text-2xl">History</h3>
           <div className="flex flex-col gap-4 my-4">
@@ -53,6 +58,7 @@ export const Withdrawals = ({
               <WithdrawalHistoryCard
                 key={proposal.pubkey.toString()}
                 proposal={proposal}
+                expenseManager={expenseManager}
               />
             ))}
           </div>
@@ -60,32 +66,6 @@ export const Withdrawals = ({
       )}
     </>
   );
-};
-
-const parseProposal = (proposal: ProposalInfo): [string, string] => {
-  const proposalDescriptionLines = proposal.description.trimEnd().split("\n");
-  let timeDisplay;
-  if (proposal.executedAt) {
-    timeDisplay = new Date(
-      proposal.executedAt.muln(1000).toNumber()
-    ).toLocaleDateString("en-US", { year: "2-digit", month: "2-digit" });
-  } else {
-    timeDisplay = "";
-  }
-  let proposalDisplay;
-  try {
-    const solAmount =
-      Number(proposalDescriptionLines[0].slice(10)) / LAMPORTS_PER_SOL;
-    const manager = proposalDescriptionLines[1].slice(9);
-    const treasury = proposalDescriptionLines[2].slice(10);
-    proposalDisplay = `Withdraw ${solAmount}◎ ${displayPubkey(
-      manager
-    )} -> ${displayPubkey(treasury)}`;
-  } catch {
-    proposalDisplay = proposal.title;
-  }
-
-  return [proposalDisplay, timeDisplay];
 };
 
 export const PendingWithdrawalProposal = ({
@@ -127,7 +107,9 @@ export const PendingWithdrawalProposal = ({
     }
   };
 
-  const [proposalDisplay] = parseProposal(proposal);
+  const [proposalDisplay] = expenseManager.account.squad
+    ? parseSquadsProposal(proposal)
+    : parseSPLProposal(proposal);
   return (
     <div className="bordered w-full compact rounded-md bg-white">
       <div className="flex justify-between items-center p-4">
@@ -162,10 +144,14 @@ export const PendingWithdrawalProposal = ({
 
 export const WithdrawalHistoryCard = ({
   proposal,
+  expenseManager,
 }: {
   proposal: ProposalInfo;
+  expenseManager: ExpenseManagerItem;
 }) => {
-  const [withdrawalDisplay, timeDisplay] = parseProposal(proposal);
+  const [withdrawalDisplay, timeDisplay] = expenseManager.account.squad
+    ? parseSquadsProposal(proposal)
+    : parseSPLProposal(proposal);
   return (
     <div className="bordered w-full compact rounded-md bg-white">
       <div className="flex justify-between items-center p-4 text-black">

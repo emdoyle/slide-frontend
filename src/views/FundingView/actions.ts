@@ -5,6 +5,7 @@ import { ExpenseManagerItem } from "types";
 import {
   AccountMetaData,
   getAllProposals,
+  getGovernance,
   getNativeTreasuryAddress,
   getTokenOwnerRecordAddress,
   InstructionData,
@@ -33,13 +34,10 @@ export const createSPLWithdrawalProposal = async (
   if (!managerData.realm || !managerData.governanceAuthority) {
     throw new Error("Manager not set up for SPL");
   }
-  const proposalCount = (
-    await getAllProposals(
-      connection,
-      constants.SPL_GOV_PROGRAM_ID,
-      managerData.realm
-    )
-  ).length;
+  const governanceData = await getGovernance(
+    connection,
+    managerData.governanceAuthority
+  );
   const nativeTreasury = await getNativeTreasuryAddress(
     constants.SPL_GOV_PROGRAM_ID,
     managerData.governanceAuthority
@@ -76,7 +74,7 @@ export const createSPLWithdrawalProposal = async (
     "",
     managerData.membershipTokenMint,
     user,
-    proposalCount,
+    governanceData.account.proposalCount,
     new VoteType({ type: 0, choiceCount: 1 }),
     ["Withdraw"],
     true,
