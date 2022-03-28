@@ -289,8 +289,10 @@ const CreateExpenseManagerModal = ({
         userPublicKey
       );
       initializeManager = await program.methods
-        // @ts-ignore
-        .splGovInitializeExpenseManager(realm?.pubkey, govAuthPubkey)
+        .splGovInitializeExpenseManager(
+          // @ts-ignore
+          realm?.pubkey
+        )
         .accounts({
           expenseManager,
           governanceAuthority: treasury?.governance.pubkey,

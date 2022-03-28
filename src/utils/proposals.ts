@@ -35,3 +35,22 @@ export const SPLProposalToInfo = (
     executedAt: splProposal.account.executingAt ?? undefined,
   };
 };
+
+export const isWithdrawal = (proposal: ProposalInfo): boolean => {
+  // TODO: use bracket ID consistently across Squads/SPL
+  return proposal.title.includes("Withdraw");
+};
+
+export const isAccessRequest = (proposal: ProposalInfo): boolean => {
+  // TODO: use bracket ID consistently across Squads/SPL
+  return proposal.title.includes("Grant");
+};
+
+export const overflowEllipses = (
+  content: string,
+  maxLength: number = 24
+): string => {
+  if (content.length < maxLength) return content;
+
+  return `${content.slice(0, maxLength)}...`;
+};

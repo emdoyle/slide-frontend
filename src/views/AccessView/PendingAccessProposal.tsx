@@ -1,9 +1,8 @@
 import {
   getSquadMintAddressAndBump,
-  ProposalItem,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import { ExpenseManagerItem } from "types";
+import { ExpenseManagerItem, ProposalInfo } from "types";
 import { FC, useState } from "react";
 import { Program } from "@project-serum/anchor";
 import { Slide } from "@slidexyz/slide-sdk";
@@ -12,13 +11,14 @@ import {
   getAccessRecordAddressAndBump,
   getProposalExecutionAddressAndBump,
 } from "@slidexyz/slide-sdk/lib/address";
-import { Loader } from "../../components";
-import { useSlideProgram } from "../../utils/useSlide";
+import { Loader } from "components";
+import { useSlideProgram } from "utils/useSlide";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAlert } from "react-alert";
+import { overflowEllipses } from "utils/proposals";
 
 type Props = {
-  proposal: ProposalItem;
+  proposal: ProposalInfo;
   expenseManager: ExpenseManagerItem;
   // TODO: need to do some state rearranging to get this - SWR abstraction might
   //  be worth it if there is caching by key/manual invalidation etc.
@@ -28,37 +28,39 @@ type Props = {
 const executeAccessProposal = async (
   program: Program<Slide>,
   user: PublicKey,
-  proposal: ProposalItem,
+  proposal: PublicKey,
   expenseManager: ExpenseManagerItem
 ): Promise<string | undefined> => {
-  const [accessRecord] = getAccessRecordAddressAndBump(
-    program.programId,
-    expenseManager.publicKey,
-    user
-  );
-  const [proposalExecution] = getProposalExecutionAddressAndBump(
-    program.programId,
-    expenseManager.publicKey,
-    proposal.pubkey
-  );
-  const [squadMint] = await getSquadMintAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-    proposal.account.squad
-  );
-  await program.methods
-    .squadsExecuteAccessProposal()
-    .accounts({
-      proposal: proposal.pubkey,
-      accessRecord,
-      expenseManager: expenseManager.publicKey,
-      squad: proposal.account.squad,
-      squadMint,
-      proposalExecution,
-      member: user,
-      signer: user,
-    })
-    .rpc();
-  return `Access Proposal executed!`;
+  if (expenseManager.account.squad) {
+    const [accessRecord] = getAccessRecordAddressAndBump(
+      program.programId,
+      expenseManager.publicKey,
+      user
+    );
+    const [proposalExecution] = getProposalExecutionAddressAndBump(
+      program.programId,
+      expenseManager.publicKey,
+      proposal
+    );
+    const [squadMint] = await getSquadMintAddressAndBump(
+      SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+      expenseManager.account.squad
+    );
+    await program.methods
+      .squadsExecuteAccessProposal()
+      .accounts({
+        proposal,
+        accessRecord,
+        expenseManager: expenseManager.publicKey,
+        squad: expenseManager.account.squad,
+        squadMint,
+        proposalExecution,
+        member: user,
+        signer: user,
+      })
+      .rpc();
+    return `Access Proposal executed!`;
+  }
 };
 
 export const PendingAccessProposal: FC<Props> = ({
@@ -81,7 +83,7 @@ export const PendingAccessProposal: FC<Props> = ({
       const alertText = await executeAccessProposal(
         program,
         userPublicKey,
-        proposal,
+        proposal.pubkey,
         expenseManager
       );
       Alert.show(alertText);
@@ -99,16 +101,26 @@ export const PendingAccessProposal: FC<Props> = ({
   return (
     <div className="bordered w-full compact rounded-md bg-white">
       <div className="flex justify-between items-center p-4">
-        <h2 className="text-lg text-black">
-          {proposal.account.title.trimEnd()}
-        </h2>
+        <div className="flex justify-start items-center p-4">
+          {proposal.description.trimEnd() ? (
+            <div className="tooltip" data-tip={proposal.description}>
+              <h2 className="text-lg text-black">
+                {overflowEllipses(proposal.title.trimEnd(), 50)}
+              </h2>
+            </div>
+          ) : (
+            <h2 className="text-lg text-black">
+              {overflowEllipses(proposal.title.trimEnd(), 50)}
+            </h2>
+          )}
+        </div>
         {isLoading && (
           <div>
             <Loader noText color="black" />
           </div>
         )}
-        {/* TODO: More state logic (failed, executed) */}
-        {!isLoading && proposal.account.executeReady ? (
+        {/* TODO: More state logic (failed) */}
+        {!isLoading && proposal.executeReady ? (
           <button
             className="btn w-24"
             onClick={() => {
