@@ -8,161 +8,24 @@ import { PromptConnectWallet } from "components/PromptConnectWallet";
 import { AccessRecordItem, ExpenseManager, ExpenseManagerItem } from "types";
 import { AccessRecordCard } from "./AccessRecordCard";
 import { useRouter } from "next/router";
-import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { address, constants, Slide, utils } from "@slidexyz/slide-sdk";
-import {
-  AccountMetaData,
-  getGovernance,
-  getNativeTreasuryAddress,
-  getTokenOwnerRecordAddress,
-  InstructionData,
-  VoteType,
-  withCreateProposal,
-  withInsertTransaction,
-  withSignOffProposal,
-} from "@solana/spl-governance";
-import { Program } from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
 import {
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-  withCreateProposalAccount,
   getProposals,
   ProposalItem,
-  SquadItem,
-  getSquad,
 } from "@slidexyz/squads-sdk";
 import { useAlert } from "react-alert";
 import { PendingAccessProposal } from "./PendingAccessProposal";
-
-const createSPLAccessProposal = async (
-  program: Program<Slide>,
-  connection: Connection,
-  user: PublicKey,
-  expenseManager: ExpenseManagerItem,
-  accessRecord: PublicKey
-): Promise<string | undefined> => {
-  const managerData = expenseManager.account;
-  if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not set up for SPL";
-  }
-  const proposalCount = (
-    await getGovernance(connection, managerData.governanceAuthority)
-  ).account.proposalCount;
-  const nativeTreasury = await getNativeTreasuryAddress(
-    constants.SPL_GOV_PROGRAM_ID,
-    managerData.governanceAuthority
-  );
-  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
-    managerData.realm,
-    managerData.membershipTokenMint,
-    user
-  );
-  const instruction: TransactionInstruction = await program.methods
-    .splGovCreateAccessRecord(managerData.realm, user, {
-      reviewer: {},
-    })
-    .accounts({
-      accessRecord,
-      expenseManager: expenseManager.publicKey,
-      governanceAuthority: managerData.governanceAuthority,
-      nativeTreasury,
-    })
-    .instruction();
-  const instructionData = new InstructionData({
-    programId: program.programId,
-    accounts: instruction.keys.map((key) => new AccountMetaData({ ...key })),
-    data: instruction.data,
-  });
-  // create a proposal containing those instructions
-  let instructions: TransactionInstruction[] = [];
-  const proposal = await withCreateProposal(
-    instructions,
-    constants.SPL_GOV_PROGRAM_ID,
-    2,
-    managerData.realm,
-    managerData.governanceAuthority,
-    tokenOwnerRecord,
-    `[SLIDE] Grant Reviewer Access: ${user.toString()}`,
-    "",
-    managerData.membershipTokenMint,
-    user,
-    proposalCount,
-    new VoteType({ type: 0, choiceCount: 1 }),
-    ["Grant Access"],
-    true,
-    user
-  );
-  await withInsertTransaction(
-    instructions,
-    constants.SPL_GOV_PROGRAM_ID,
-    2,
-    managerData.governanceAuthority,
-    proposal,
-    tokenOwnerRecord,
-    user,
-    0,
-    0,
-    0,
-    [instructionData],
-    user
-  );
-  // initiate voting on the proposal
-  // TODO: this may not be necessary
-  await withSignOffProposal(
-    instructions,
-    constants.SPL_GOV_PROGRAM_ID,
-    2,
-    managerData.realm,
-    managerData.governanceAuthority,
-    proposal,
-    user,
-    undefined,
-    tokenOwnerRecord
-  );
-
-  // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
-};
-
-const createSquadsAccessProposal = async (
-  program: Program<Slide>,
-  connection: Connection,
-  user: PublicKey,
-  expenseManager: ExpenseManagerItem
-): Promise<string | undefined> => {
-  const managerData = expenseManager.account;
-  if (!managerData.squad) {
-    return "Manager not set up for Squads";
-  }
-
-  const squad = await getSquad(connection, managerData.squad);
-  const instructions: TransactionInstruction[] = [];
-  await withCreateProposalAccount(
-    instructions,
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-    user,
-    managerData.squad,
-    squad.proposalNonce + 1,
-    0,
-    "[SLIDE PROPOSAL] Grant Permission",
-    `member: ${user.toString()}\nrole: reviewer`,
-    2,
-    ["Approve", "Deny"]
-  );
-
-  // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
-};
+import { CreateAccessProposalModal } from "./CreateAccessProposalModal";
 
 export const AccessView: FC = ({}) => {
   const Alert = useAlert();
   const router = useRouter();
   const query = router.query;
-  const { connection } = useConnection();
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [proposalSubmitting, setProposalSubmitting] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
 
@@ -193,36 +56,6 @@ export const AccessView: FC = ({}) => {
     fetchExpenseManager();
   }, [program?.programId, query?.pubkey]);
 
-  const createAccessProposal = async () => {
-    if (!program || !expenseManager || !userPublicKey) return;
-    const managerData = expenseManager.account;
-    let alertText;
-    const [accessRecord] = address.getAccessRecordAddressAndBump(
-      program.programId,
-      expenseManager.publicKey,
-      userPublicKey
-    );
-    if (managerData.realm && managerData.governanceAuthority) {
-      alertText = await createSPLAccessProposal(
-        program,
-        connection,
-        userPublicKey,
-        expenseManager,
-        accessRecord
-      );
-    } else {
-      alertText = await createSquadsAccessProposal(
-        program,
-        connection,
-        userPublicKey,
-        expenseManager
-      );
-    }
-    if (alertText) {
-      Alert.show(alertText);
-    }
-  };
-
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -234,32 +67,31 @@ export const AccessView: FC = ({}) => {
               <div className="max-w-lg">
                 <h1 className="mb-5 text-5xl">Expense Manager Access</h1>
                 <p className="text-xl mb-5">
-                  View who can approve and deny expenses
+                  Officers are granted permission to approve and deny expenses
+                  using Proposals submitted to your DAO.
                 </p>
 
                 {connected && !isLoading && query?.pubkey && (
                   <>
                     <div className="flex flex-col gap-2 justify-center mt-5">
-                      <p className="text-xl">
-                        Create Proposal to grant your wallet
-                        &apos;Reviewer&apos; access
-                      </p>
                       <button
-                        disabled={proposalSubmitting}
                         className="btn btn-primary"
                         onClick={() => {
-                          setProposalSubmitting(true);
-                          createAccessProposal()
-                            .then(() => Alert.show("Success"))
-                            .catch((err) => Alert.error(err.message))
-                            .finally(() => setProposalSubmitting(false));
+                          setModalOpen(true);
                         }}
                       >
-                        Create
+                        Request Access
                       </button>
                     </div>
                     {expenseManager && (
-                      <ProposalContent expenseManager={expenseManager} />
+                      <>
+                        <ProposalContent expenseManager={expenseManager} />
+                        <CreateAccessProposalModal
+                          open={modalOpen}
+                          close={() => setModalOpen(false)}
+                          expenseManager={expenseManager}
+                        />
+                      </>
                     )}
                     <AccessRecordContent
                       managerPubkey={new PublicKey(query.pubkey)}

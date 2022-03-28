@@ -4,7 +4,7 @@ import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { ExpenseManagerItem } from "types";
 import {
   AccountMetaData,
-  getAllProposals,
+  getGovernance,
   getNativeTreasuryAddress,
   getTokenOwnerRecordAddress,
   InstructionData,
@@ -15,31 +15,26 @@ import {
 } from "@solana/spl-governance";
 import {
   getSquad,
-  getSquadMintAddressAndBump,
-  getSquadTreasuryAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
-import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
-import { displayPubkey } from "utils/formatting";
+import { capitalize } from "../../utils/formatting";
 
-export const createSPLWithdrawalProposal = async (
+export const createSPLAccessProposal = async (
   program: Program<Slide>,
   connection: Connection,
   user: PublicKey,
-  expenseManager: ExpenseManagerItem
+  expenseManager: ExpenseManagerItem,
+  accessRecord: PublicKey,
+  role: "reviewer" | "admin"
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    throw new Error("Manager not set up for SPL");
+    return "Manager not set up for SPL";
   }
   const proposalCount = (
-    await getAllProposals(
-      connection,
-      constants.SPL_GOV_PROGRAM_ID,
-      managerData.realm
-    )
-  ).length;
+    await getGovernance(connection, managerData.governanceAuthority)
+  ).account.proposalCount;
   const nativeTreasury = await getNativeTreasuryAddress(
     constants.SPL_GOV_PROGRAM_ID,
     managerData.governanceAuthority
@@ -51,8 +46,11 @@ export const createSPLWithdrawalProposal = async (
     user
   );
   const instruction: TransactionInstruction = await program.methods
-    .splGovWithdrawFromExpenseManager(managerData.realm)
+    .splGovCreateAccessRecord(managerData.realm, user, {
+      [role]: {},
+    })
     .accounts({
+      accessRecord,
       expenseManager: expenseManager.publicKey,
       governanceAuthority: managerData.governanceAuthority,
       nativeTreasury,
@@ -72,13 +70,13 @@ export const createSPLWithdrawalProposal = async (
     managerData.realm,
     managerData.governanceAuthority,
     tokenOwnerRecord,
-    `[SLIDE] Withdraw all funds from expense manager ${expenseManager.publicKey.toString()}`,
+    `[SLIDE] Grant ${capitalize(role)} Access: ${user.toString()}`,
     "",
     managerData.membershipTokenMint,
     user,
     proposalCount,
     new VoteType({ type: 0, choiceCount: 1 }),
-    ["Withdraw"],
+    ["Grant Access"],
     true,
     user
   );
@@ -112,80 +110,35 @@ export const createSPLWithdrawalProposal = async (
 
   // @ts-ignore
   await utils.flushInstructions(program, instructions, []);
-
-  return `Created proposal: ${displayPubkey(proposal)}`;
 };
 
-export const createSquadsWithdrawalProposal = async (
+export const createSquadsAccessProposal = async (
   program: Program<Slide>,
   connection: Connection,
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
-  lamports: number
+  role: "reviewer" | "admin"
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.squad) {
-    throw new Error("Manager is not set up for Squads");
+    return "Manager not set up for Squads";
   }
+
   const squad = await getSquad(connection, managerData.squad);
-  const [squadTreasury] = await getSquadTreasuryAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-    managerData.squad
-  );
   const instructions: TransactionInstruction[] = [];
-  const { proposal } = await withCreateProposalAccount(
+  await withCreateProposalAccount(
     instructions,
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     user,
     managerData.squad,
     squad.proposalNonce + 1,
     0,
-    "[SLIDE PROPOSAL] Withdrawal",
-    `lamports: ${lamports}\nmanager: ${expenseManager.publicKey.toString()}\ntreasury: ${squadTreasury.toString()}`,
+    "[SLIDE PROPOSAL] Grant Permission",
+    `member: ${user.toString()}\nrole: ${role}`,
     2,
     ["Approve", "Deny"]
   );
 
   // @ts-ignore
   await utils.flushInstructions(program, instructions, []);
-
-  return `Created proposal: ${displayPubkey(proposal)}`;
-};
-
-export const executeWithdrawalProposal = async (
-  program: Program<Slide>,
-  user: PublicKey,
-  proposal: PublicKey,
-  expenseManager: ExpenseManagerItem
-): Promise<string | undefined> => {
-  const managerData = expenseManager.account;
-  if (!managerData.squad) {
-    throw new Error("Manager is not set up for Squads");
-  }
-  const [proposalExecution] = getProposalExecutionAddressAndBump(
-    program.programId,
-    expenseManager.publicKey,
-    proposal
-  );
-  const [squadMint] = await getSquadMintAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-    managerData.squad
-  );
-  const [squadTreasury] = await getSquadTreasuryAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-    managerData.squad
-  );
-  await program.methods
-    .squadsExecuteWithdrawalProposal()
-    .accounts({
-      proposal,
-      expenseManager: expenseManager.publicKey,
-      squad: managerData.squad,
-      squadMint,
-      squadTreasury,
-      proposalExecution,
-      signer: user,
-    })
-    .rpc();
-  return `Withdrawal Proposal executed!`;
 };
