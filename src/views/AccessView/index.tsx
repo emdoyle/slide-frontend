@@ -28,6 +28,7 @@ import {
   getProposals,
   ProposalItem,
   SquadItem,
+  getSquad,
 } from "@slidexyz/squads-sdk";
 import { useAlert } from "react-alert";
 import { PendingAccessProposal } from "./PendingAccessProposal";
@@ -125,6 +126,7 @@ const createSPLAccessProposal = async (
 
 const createSquadsAccessProposal = async (
   program: Program<Slide>,
+  connection: Connection,
   user: PublicKey,
   expenseManager: ExpenseManagerItem
 ): Promise<string | undefined> => {
@@ -132,13 +134,15 @@ const createSquadsAccessProposal = async (
   if (!managerData.squad) {
     return "Manager not set up for Squads";
   }
+
+  const squad = await getSquad(connection, managerData.squad);
   const instructions: TransactionInstruction[] = [];
   await withCreateProposalAccount(
     instructions,
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     user,
     managerData.squad,
-    1, // TODO: this requires us to pull Squad data from the chain!
+    squad.proposalNonce + 1,
     0,
     "[SLIDE PROPOSAL] Grant Permission",
     `member: ${user.toString()}\nrole: reviewer`,
@@ -161,8 +165,6 @@ export const AccessView: FC = ({}) => {
   const [proposalSubmitting, setProposalSubmitting] = useState<boolean>(false);
   const [expenseManager, setExpenseManager] =
     useState<ExpenseManagerItem | null>(null);
-  // TODO: fetch squad (need single fetch in squads SDK)
-  const [squad, setSquad] = useState<SquadItem | null>(null);
 
   async function fetchExpenseManager() {
     if (program && query?.pubkey) {
@@ -211,6 +213,7 @@ export const AccessView: FC = ({}) => {
     } else {
       alertText = await createSquadsAccessProposal(
         program,
+        connection,
         userPublicKey,
         expenseManager
       );
@@ -313,7 +316,7 @@ const ProposalContent = ({
   }, [expenseManager.account.squad?.toString()]);
 
   const pendingAccessProposals = proposals.filter((proposal) =>
-    proposal.account.title.includes("Reviewer Access")
+    proposal.account.title.includes("Grant Permission")
   );
 
   if (isLoading) {

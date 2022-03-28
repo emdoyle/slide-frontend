@@ -27,6 +27,7 @@ import { constants, Slide, utils } from "@slidexyz/slide-sdk";
 import { useBalance } from "../../utils/useBalance";
 import { Program } from "@project-serum/anchor";
 import {
+  getSquad,
   getSquadTreasuryAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
   withCreateProposalAccount,
@@ -127,6 +128,7 @@ const createSPLWithdrawalProposal = async (
 
 const createSquadsWithdrawalProposal = async (
   program: Program<Slide>,
+  connection: Connection,
   user: PublicKey,
   expenseManager: ExpenseManagerItem,
   lamports: number
@@ -135,6 +137,7 @@ const createSquadsWithdrawalProposal = async (
   if (!managerData.squad) {
     return "Manager is not setup for Squads";
   }
+  const squad = await getSquad(connection, managerData.squad);
   const [squadTreasury] = await getSquadTreasuryAddressAndBump(
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     managerData.squad
@@ -145,7 +148,7 @@ const createSquadsWithdrawalProposal = async (
     SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
     user,
     managerData.squad,
-    3, // TODO: need to pull on-chain Squad data to figure out nonce
+    squad.proposalNonce + 1,
     0,
     "[SLIDE PROPOSAL] Withdrawal",
     `lamports: ${lamports}\nmanager: ${expenseManager.publicKey.toString()}\ntreasury: ${squadTreasury.toString()}`,
@@ -156,7 +159,11 @@ const createSquadsWithdrawalProposal = async (
   // @ts-ignore
   await utils.flushInstructions(program, instructions, []);
 
-  return `Created proposal: ${proposal.toString()}`;
+  const proposalAddress = proposal.toString();
+  return `Created proposal: ${proposalAddress.slice(
+    0,
+    4
+  )}..${proposalAddress.slice(-4)}`;
 };
 
 export const FundingView: FC = ({}) => {
@@ -219,6 +226,7 @@ export const FundingView: FC = ({}) => {
     } else {
       alertText = await createSquadsWithdrawalProposal(
         program,
+        connection,
         userPublicKey,
         expenseManager,
         lamports
