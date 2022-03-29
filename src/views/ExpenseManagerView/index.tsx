@@ -86,11 +86,12 @@ export const ExpenseManagerView: FC = ({}) => {
                   </button>
                 )}
 
-                {connected && isLoading ? (
+                {connected && isLoading && (
                   <div>
                     <Loader />
                   </div>
-                ) : (
+                )}
+                {connected && !isLoading && (
                   <div className="flex flex-col">
                     <div className="w-full flex justify-end">
                       <svg
