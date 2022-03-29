@@ -2,23 +2,26 @@ import { FC } from "react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Link from "next/link";
 
-export const Nav: FC<{}> = () => {
+export const Nav: FC<{}> = ({ children }) => {
   return (
-    <div className="navbar mb-2 shadow-lg bg-neutral text-neutral-content rounded-box">
-      <Link href="/">
-        <button className="btn btn-square btn-ghost">
-          <span className="text-4xl">🏠</span>
-        </button>
-      </Link>
-      <Link href="/managers">
-        <button className="btn btn-square btn-ghost">
-          <span className="text-4xl">🌐</span>
-        </button>
-      </Link>
-      <div className="flex-1 px-2 mx-2">
-        <span className="text-lg font-bold">Slide</span>
+    <div className="navbar mb-2 shadow-lg bg-neutral text-neutral-content rounded-box justify-between items-center">
+      <div>
+        <Link href="/">
+          <button className="btn btn-square btn-ghost">
+            <span className="text-4xl">🏠</span>
+          </button>
+        </Link>
+        <Link href="/managers">
+          <button className="btn btn-square btn-ghost">
+            <span className="text-4xl">🌐</span>
+          </button>
+        </Link>
+        <div className={`pl-2 pr-8 ml-2 mr-6 ${children && "border-r-2"}`}>
+          <span className="text-lg font-bold">Slide</span>
+        </div>
+        {children}
       </div>
-      <div className="flex-none">
+      <div className="pr-2">
         <WalletMultiButton className="btn btn-ghost" />
       </div>
     </div>

@@ -148,81 +148,82 @@ export const FundingView: FC = ({}) => {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
-      <div className={styles.container}>
-        <Nav />
+    <div className="text-center pt-2">
+      <div className="hero min-h-16 py-4">
+        <div className="text-center hero-content">
+          <div className="max-w-lg">
+            {expenseManager ? (
+              <h1 className="mb-5 text-5xl">
+                Funding for{" "}
+                <span className="font-bold">{expenseManager.account.name}</span>
+              </h1>
+            ) : (
+              <h1 className="mb-5 text-5xl">Funding</h1>
+            )}
+            {isLoading && (
+              <div>
+                <Loader />
+              </div>
+            )}
+            {connected && !isLoading && expenseManager && (
+              <>
+                <div className="flex flex-col gap-2 justify-center mt-5">
+                  <p className="text-xl mb-5">
+                    Deposit funds into your Slide Expense Manager using the
+                    address below.
+                  </p>
+                  <div className="card text-black bg-gray-400">
+                    <div className="card-body">
+                      <h3 className="card-title">
+                        Expense Manager Address {balanceDisplay}
+                      </h3>
 
-        <div className="text-center pt-2">
-          <div className="hero min-h-16 py-4">
-            <div className="text-center hero-content">
-              <div className="max-w-lg">
-                <h1 className="mb-5 text-5xl">Expense Manager Funding</h1>
-                {isLoading && (
+                      <p>{expenseManager.publicKey.toString()}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col justify-start text-left my-6">
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="text-2xl">Create Withdrawal</h3>
+                      <p>Withdraw funds with a Proposal</p>
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setModalOpen(true)}
+                    >
+                      Withdraw
+                    </button>
+                  </div>
+                </div>
+                {proposalsLoading ? (
                   <div>
                     <Loader />
                   </div>
-                )}
-                {connected && !isLoading && expenseManager && (
-                  <>
-                    <div className="flex flex-col gap-2 justify-center mt-5">
-                      <p className="text-xl mb-5">
-                        Deposit funds into your Slide Expense Manager using the
-                        address below.
-                      </p>
-                      <div className="card text-black bg-gray-400">
-                        <div className="card-body">
-                          <h3 className="card-title">
-                            Expense Manager Address {balanceDisplay}
-                          </h3>
-
-                          <p>{expenseManager.publicKey.toString()}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col justify-start text-left my-6">
-                      <div className="flex justify-between items-center">
-                        <div className="flex flex-col gap-2">
-                          <h3 className="text-2xl">Create Withdrawal</h3>
-                          <p>Withdraw funds with a Proposal</p>
-                        </div>
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => setModalOpen(true)}
-                        >
-                          Withdraw
-                        </button>
-                      </div>
-                    </div>
-                    {proposalsLoading ? (
-                      <div>
-                        <Loader />
-                      </div>
-                    ) : (
-                      <Withdrawals
-                        expenseManager={expenseManager}
-                        proposals={proposals}
-                        refetchExecutionStatus={refetchExecutionStatus}
-                      />
-                    )}
-                  </>
-                )}
-
-                {connected && expenseManager && managerBalance !== null && (
-                  <CreateWithdrawProposalModal
-                    open={modalOpen}
-                    close={(success) => {
-                      setModalOpen(false);
-                      if (success) {
-                        fetchProposals();
-                      }
-                    }}
+                ) : (
+                  <Withdrawals
                     expenseManager={expenseManager}
-                    managerBalance={managerBalance}
+                    proposals={proposals}
+                    refetchExecutionStatus={refetchExecutionStatus}
                   />
                 )}
-                {!connected && <PromptConnectWallet />}
-              </div>
-            </div>
+              </>
+            )}
+
+            {connected && expenseManager && managerBalance !== null && (
+              <CreateWithdrawProposalModal
+                open={modalOpen}
+                close={(success) => {
+                  setModalOpen(false);
+                  if (success) {
+                    fetchProposals();
+                  }
+                }}
+                expenseManager={expenseManager}
+                managerBalance={managerBalance}
+              />
+            )}
+            {!connected && <PromptConnectWallet />}
           </div>
         </div>
       </div>

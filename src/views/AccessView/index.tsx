@@ -83,52 +83,53 @@ export const AccessView: FC = ({}) => {
   }, [program?.programId, query?.pubkey]);
 
   return (
-    <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
-      <div className={styles.container}>
-        <Nav />
+    <div className="text-center pt-2">
+      <div className="hero min-h-16 py-4">
+        <div className="text-center hero-content">
+          <div className="max-w-lg">
+            {expenseManager ? (
+              <h1 className="mb-5 text-5xl">
+                Access Controls for{" "}
+                <span className="font-bold">{expenseManager.account.name}</span>
+              </h1>
+            ) : (
+              <h1 className="mb-5 text-5xl">Access Controls</h1>
+            )}
+            <p className="text-xl mb-5">
+              Officers are granted permission to approve and deny expenses using
+              Proposals submitted to your DAO.
+            </p>
 
-        <div className="text-center pt-2">
-          <div className="hero min-h-16 py-4">
-            <div className="text-center hero-content">
-              <div className="max-w-lg">
-                <h1 className="mb-5 text-5xl">Expense Manager Access</h1>
-                <p className="text-xl mb-5">
-                  Officers are granted permission to approve and deny expenses
-                  using Proposals submitted to your DAO.
-                </p>
-
-                {connected && !isLoading && query?.pubkey && (
-                  <>
-                    <div className="flex flex-col gap-2 justify-center mt-5">
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => {
-                          setModalOpen(true);
-                        }}
-                      >
-                        Request Access
-                      </button>
-                    </div>
-                    {expenseManager && (
-                      <ProposalContent
-                        expenseManager={expenseManager}
-                        modalOpen={modalOpen}
-                        setModalOpen={setModalOpen}
-                      />
-                    )}
-                    {!!accessRecords.length && (
-                      <AccessRecordList accessRecords={accessRecords} />
-                    )}
-                  </>
+            {connected && !isLoading && query?.pubkey && (
+              <>
+                <div className="flex flex-col gap-2 justify-center mt-5">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setModalOpen(true);
+                    }}
+                  >
+                    Request Access
+                  </button>
+                </div>
+                {expenseManager && (
+                  <ProposalContent
+                    expenseManager={expenseManager}
+                    modalOpen={modalOpen}
+                    setModalOpen={setModalOpen}
+                  />
                 )}
-                {connected && isLoading && (
-                  <div>
-                    <Loader />
-                  </div>
+                {!!accessRecords.length && (
+                  <AccessRecordList accessRecords={accessRecords} />
                 )}
-                {!connected && <PromptConnectWallet />}
+              </>
+            )}
+            {connected && isLoading && (
+              <div>
+                <Loader />
               </div>
-            </div>
+            )}
+            {!connected && <PromptConnectWallet />}
           </div>
         </div>
       </div>

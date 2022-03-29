@@ -284,63 +284,58 @@ export const ExpensePackageView: FC = ({}) => {
   }, [program?.programId, query?.pubkey]);
 
   return (
-    <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
-      <div className={styles.container}>
-        <Nav />
-        <div className="text-center pt-2">
-          <div className="hero min-h-16 p-0 pt-10">
-            <div className="text-center hero-content w-full">
-              <div className="w-full">
-                <div className="text-center">
-                  {expenseManager ? (
-                    <h1 className="mb-5 text-5xl">
-                      Expenses for{" "}
-                      <span className="font-bold">
-                        {expenseManager.account.name}
-                      </span>
-                    </h1>
-                  ) : (
-                    <h1 className="mb-5 text-5xl">Expenses</h1>
-                  )}
-                  <p className="mb-5 text-2xl">
-                    Create and submit expenses for reimbursement.
-                    <br />
-                    If you&apos;re an officer, you can review expenses and
-                    either Approve or Deny them.
-                  </p>
-                </div>
-                {!isLoading && connected && expenseManager && (
-                  <>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => setOpen(true)}
-                    >
-                      + Create Expense
-                    </button>
-                    <ExpensePackageContent
-                      accessRecord={accessRecord}
-                      expenseManager={expenseManager}
-                    />
-                    <CreateExpensePackageModal
-                      open={open}
-                      close={(success) => {
-                        setOpen(false);
-                        if (success) {
-                          fetchData();
-                        }
-                      }}
-                      expenseManager={expenseManager}
-                    />
-                  </>
-                )}
-                {!isLoading && !connected && <PromptConnectWallet />}
-                {isLoading && (
-                  <div>
-                    <Loader />
-                  </div>
-                )}
-              </div>
+    <div className="text-center pt-2">
+      <div className="hero min-h-16 p-0 pt-10">
+        <div className="text-center hero-content w-full">
+          <div className="w-full">
+            <div className="text-center">
+              {expenseManager ? (
+                <h1 className="mb-5 text-5xl">
+                  Expenses for{" "}
+                  <span className="font-bold">
+                    {expenseManager.account.name}
+                  </span>
+                </h1>
+              ) : (
+                <h1 className="mb-5 text-5xl">Expenses</h1>
+              )}
+              <p className="mb-5 text-2xl">
+                Create and submit expenses for reimbursement.
+                <br />
+                If you&apos;re an officer, you can review expenses and either
+                Approve or Deny them.
+              </p>
             </div>
+            {!isLoading && connected && expenseManager && (
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setOpen(true)}
+                >
+                  + Create Expense
+                </button>
+                <ExpensePackageContent
+                  accessRecord={accessRecord}
+                  expenseManager={expenseManager}
+                />
+                <CreateExpensePackageModal
+                  open={open}
+                  close={(success) => {
+                    setOpen(false);
+                    if (success) {
+                      fetchData();
+                    }
+                  }}
+                  expenseManager={expenseManager}
+                />
+              </>
+            )}
+            {!isLoading && !connected && <PromptConnectWallet />}
+            {isLoading && (
+              <div>
+                <Loader />
+              </div>
+            )}
           </div>
         </div>
       </div>
