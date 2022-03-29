@@ -95,7 +95,7 @@ export const AccessView: FC = ({}) => {
             ) : (
               <h1 className="mb-5 text-5xl">Access Controls</h1>
             )}
-            <p className="text-xl mb-5">
+            <p className="text-2xl mb-5">
               Officers are granted permission to approve and deny expenses using
               Proposals submitted to your DAO.
             </p>

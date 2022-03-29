@@ -160,6 +160,11 @@ export const FundingView: FC = ({}) => {
             ) : (
               <h1 className="mb-5 text-5xl">Funding</h1>
             )}
+            <p className="text-2xl mb-5">
+              Use your existing governance methods to fund your Slide expense
+              manager. When you want to withdraw funds, use Slide to create a
+              Proposal to withdraw to your DAO&apos;s treasury.
+            </p>
             {isLoading && (
               <div>
                 <Loader />
