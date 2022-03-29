@@ -1,10 +1,9 @@
 import { FC, useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
-import { Loader, Nav } from "components";
+import { Loader } from "components";
 import { ExpensePackageCard } from "./ExpensePackageCard";
-import styles from "./index.module.css";
-import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
 import {
@@ -15,216 +14,9 @@ import {
   ExpensePackageItem,
 } from "types";
 import { useRouter } from "next/router";
-import BN from "bn.js";
-import { constants, address, Slide } from "@slidexyz/slide-sdk";
-import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { Program } from "@project-serum/anchor";
-import {
-  getMemberEquityAddressAndBump,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-} from "@slidexyz/squads-sdk";
+import { address } from "@slidexyz/slide-sdk";
 import { useAlert } from "react-alert";
-
-const createSPLExpensePackage = async (
-  program: Program<Slide>,
-  user: PublicKey,
-  expenseManager: ExpenseManagerItem,
-  name: string,
-  description: string,
-  quantity: string
-): Promise<string | undefined> => {
-  const managerData = expenseManager.account;
-  if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not set up for SPL";
-  }
-  const [expensePackage] = address.getExpensePackageAddressAndBump(
-    expenseManager.publicKey,
-    user,
-    managerData.expensePackageNonce,
-    program.programId
-  );
-  const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
-    managerData.realm,
-    managerData.membershipTokenMint,
-    user
-  );
-  await program.methods
-    .splGovCreateExpensePackage(
-      managerData.realm,
-      managerData.expensePackageNonce,
-      name,
-      description,
-      new BN(Number(quantity) * LAMPORTS_PER_SOL)
-    )
-    .accounts({
-      expensePackage,
-      expenseManager: expenseManager.publicKey,
-      tokenOwnerRecord,
-      owner: user,
-    })
-    .rpc();
-};
-
-const createSquadsExpensePackage = async (
-  program: Program<Slide>,
-  user: PublicKey,
-  expenseManager: ExpenseManagerItem,
-  name: string,
-  description: string,
-  quantity: string
-): Promise<string | undefined> => {
-  const managerData = expenseManager.account;
-  if (!managerData.squad) {
-    return "Manager not set up for Squads";
-  }
-  const [expensePackage] = address.getExpensePackageAddressAndBump(
-    expenseManager.publicKey,
-    user,
-    managerData.expensePackageNonce,
-    program.programId
-  );
-  const [memberEquity] = await getMemberEquityAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-    user,
-    managerData.squad
-  );
-  await program.methods
-    .squadsCreateExpensePackage(
-      managerData.expensePackageNonce,
-      name,
-      description,
-      new BN(Number(quantity) * LAMPORTS_PER_SOL)
-    )
-    .accounts({
-      expensePackage,
-      expenseManager: expenseManager.publicKey,
-      memberEquity,
-      squad: managerData.squad,
-      owner: user,
-    })
-    .rpc();
-};
-
-const CreateExpensePackageModal = ({
-  open,
-  close,
-  expenseManager,
-}: {
-  open: boolean;
-  close: (success?: boolean) => void;
-  expenseManager: ExpenseManagerItem;
-}) => {
-  const Alert = useAlert();
-  const { publicKey: userPublicKey } = useWallet();
-  const { program } = useSlideProgram();
-  const [name, setName] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [quantity, setQuantity] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  const submitForm = async () => {
-    if (!userPublicKey || !program) {
-      Alert.show("Please connect your wallet");
-      return;
-    }
-    if (!name || !quantity) {
-      Alert.show("Name and quantity are required fields");
-      return;
-    }
-    const expenseManagerAccount = expenseManager.account;
-    let alertText;
-    if (
-      expenseManagerAccount.realm &&
-      expenseManagerAccount.governanceAuthority
-    ) {
-      alertText = await createSPLExpensePackage(
-        program,
-        userPublicKey,
-        expenseManager,
-        name,
-        description,
-        quantity
-      );
-    } else {
-      alertText = await createSquadsExpensePackage(
-        program,
-        userPublicKey,
-        expenseManager,
-        name,
-        description,
-        quantity
-      );
-    }
-    if (alertText) {
-      Alert.show(alertText);
-    }
-  };
-
-  return (
-    <div className={`modal ${open && "modal-open"}`}>
-      <div className="modal-box">
-        <h3 className="font-bold text-lg">Add a new expense</h3>
-        <div className="flex flex-col gap-2 justify-center">
-          <input
-            disabled={isLoading}
-            type="text"
-            placeholder="For"
-            className="input input-bordered w-full bg-white text-black"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <input
-            disabled={isLoading}
-            type="text"
-            placeholder="Description (optional)"
-            className="input input-bordered w-full bg-white text-black"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-          <input
-            disabled={isLoading}
-            type="number"
-            placeholder="Amount (in SOL)"
-            className="input input-bordered w-full bg-white text-black"
-            max={1_000_000}
-            min={0}
-            step={1 / LAMPORTS_PER_SOL}
-            value={quantity}
-            onChange={(event) => setQuantity(event.target.value)}
-          />
-        </div>
-        <div className="flex gap-2 mt-4 justify-center">
-          <button
-            disabled={isLoading}
-            className="btn btn-primary"
-            onClick={() => {
-              setIsLoading(true);
-              submitForm()
-                .then(() => {
-                  Alert.show("Success");
-                  close(true);
-                })
-                .catch((err: Error) => Alert.error(err.message))
-                .finally(() => setIsLoading(false));
-            }}
-          >
-            Create
-          </button>
-          <button
-            className="btn"
-            onClick={() => {
-              setIsLoading(false);
-              close();
-            }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { ExpensePackageModal } from "./ExpensePackageModal";
 
 export const ExpensePackageView: FC = ({}) => {
   const Alert = useAlert();
@@ -318,7 +110,7 @@ export const ExpensePackageView: FC = ({}) => {
                   accessRecord={accessRecord}
                   expenseManager={expenseManager}
                 />
-                <CreateExpensePackageModal
+                <ExpensePackageModal
                   open={open}
                   close={(success) => {
                     setOpen(false);
@@ -427,21 +219,42 @@ const ExpensePackageList = ({
   canApproveAndDeny,
   refetchExpensePackage,
 }: ExpensePackageListProps) => {
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [packageToUpdate, setPackageToUpdate] = useState<
+    ExpensePackageItem | undefined
+  >();
   return (
-    <div className="flex flex-col gap-4">
-      {expensePackages.map((expensePackage) => (
-        <ExpensePackageCard
-          key={expensePackage.publicKey.toString()}
-          expenseManager={expenseManager}
-          expensePackage={expensePackage}
-          canApproveAndDeny={canApproveAndDeny}
-          refetchExpensePackage={() => {
-            if (refetchExpensePackage) {
-              refetchExpensePackage(expensePackage.publicKey);
-            }
-          }}
-        />
-      ))}
-    </div>
+    <>
+      <div className="flex flex-col gap-4">
+        {expensePackages.map((expensePackage) => (
+          <ExpensePackageCard
+            key={expensePackage.publicKey.toString()}
+            expenseManager={expenseManager}
+            expensePackage={expensePackage}
+            canApproveAndDeny={canApproveAndDeny}
+            refetchExpensePackage={() => {
+              if (refetchExpensePackage) {
+                refetchExpensePackage(expensePackage.publicKey);
+              }
+            }}
+            openUpdateModal={() => {
+              setPackageToUpdate(expensePackage);
+              setModalOpen(true);
+            }}
+          />
+        ))}
+      </div>
+      <ExpensePackageModal
+        open={modalOpen}
+        close={(success) => {
+          setModalOpen(false);
+          if (success && packageToUpdate && refetchExpensePackage) {
+            refetchExpensePackage(packageToUpdate.publicKey);
+          }
+        }}
+        expenseManager={expenseManager}
+        packageToUpdate={packageToUpdate}
+      />
+    </>
   );
 };

@@ -10,7 +10,7 @@ import {
   getMemberEquityAddressAndBump,
   SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import { Loader } from "../../components";
+import { Loader } from "components";
 import { useAlert } from "react-alert";
 
 type Props = {
@@ -18,6 +18,7 @@ type Props = {
   expensePackage: ExpensePackageItem;
   canApproveAndDeny?: boolean;
   refetchExpensePackage?: () => void;
+  openUpdateModal?: () => void;
 };
 
 const submitSPLPackage = async (
@@ -217,6 +218,7 @@ export const ExpensePackageCard: FC<Props> = ({
   expensePackage,
   canApproveAndDeny,
   refetchExpensePackage,
+  openUpdateModal,
 }) => {
   const Alert = useAlert();
   const { publicKey: userPublicKey } = useWallet();
@@ -332,6 +334,14 @@ export const ExpensePackageCard: FC<Props> = ({
         )}
         {!isLoading && packageData.state.created && (
           <div className="flex gap-2">
+            {packageOwnedByUser && (
+              <button
+                className="btn btn-outline btn-primary w-24"
+                onClick={openUpdateModal}
+              >
+                Update
+              </button>
+            )}
             <button
               className="btn btn-primary w-24"
               onClick={() => {
