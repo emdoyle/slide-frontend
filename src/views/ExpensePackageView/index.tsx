@@ -315,7 +315,7 @@ export const ExpensePackageView: FC = ({}) => {
                       className="btn btn-primary"
                       onClick={() => setOpen(true)}
                     >
-                      Create Expense
+                      + Create Expense
                     </button>
                     <ExpensePackageContent
                       accessRecord={accessRecord}
