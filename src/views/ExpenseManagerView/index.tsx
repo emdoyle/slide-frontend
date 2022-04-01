@@ -29,6 +29,7 @@ import { RealmsCombobox } from "./RealmsCombobox";
 import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
+import base58 from "bs58";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -177,7 +178,11 @@ const CreateExpenseManagerModal = ({
   const fetchSquads = async () => {
     setSquadsLoading(true);
     try {
-      setAllSquads(await getSquads(SQUADS_PROGRAM_ID, connection));
+      setAllSquads(
+        await getSquads(SQUADS_PROGRAM_ID, connection, {
+          filters: [{ memcmp: { offset: 3, bytes: base58.encode([1]) } }],
+        })
+      );
     } catch (err) {
       if (err instanceof Error) {
         Alert.error(err.message);
