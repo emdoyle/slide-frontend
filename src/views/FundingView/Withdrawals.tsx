@@ -5,8 +5,6 @@ import { ExpenseManagerItem, ProposalInfo } from "types";
 import { Loader } from "components";
 import { useSlideProgram } from "utils/useSlide";
 import { executeWithdrawalProposal } from "./actions";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { displayPubkey } from "utils/formatting";
 import {
   isWithdrawal,
   parseSPLProposal,
@@ -22,7 +20,6 @@ export const Withdrawals = ({
   proposals: ProposalInfo[];
   refetchExecutionStatus?: () => void;
 }) => {
-  console.log(proposals);
   const withdrawalProposals = proposals.filter(isWithdrawal);
   if (!withdrawalProposals) return null;
 
