@@ -10,10 +10,7 @@ import { ExpenseManager, ExpenseManagerItem, ProposalInfo } from "types";
 import { useBalance } from "utils/useBalance";
 import { CreateWithdrawProposalModal } from "./CreateWithdrawProposalModal";
 import { Withdrawals } from "./Withdrawals";
-import {
-  getProposals,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-} from "@slidexyz/squads-sdk";
+import { getProposals, SQUADS_PROGRAM_ID } from "@slidexyz/squads-sdk";
 import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 import { useAlert } from "react-alert";
 import { SPLProposalToInfo, squadsProposalToInfo } from "../../utils/proposals";
@@ -52,7 +49,7 @@ export const FundingView: FC = ({}) => {
         if (expenseManager.account.squad) {
           // Fetch Squads proposals, map into ProposalInfo
           const proposalItems = await getProposals(
-            SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+            SQUADS_PROGRAM_ID,
             connection,
             expenseManager.account.squad
           );

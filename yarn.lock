@@ -405,10 +405,10 @@
     "@solana/spl-governance" "^0.0.30"
     "@solana/spl-token" "^0.2.0"
 
-"@slidexyz/squads-sdk@^0.3.3":
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/@slidexyz/squads-sdk/-/squads-sdk-0.3.3.tgz#db1408d4b9ea314d73cab4c90c28933cb76fe4e5"
-  integrity sha512-pe5WU/bwM1HtbQJyQMsubqoBUbyF1iPOSbIFTbICPw/1/54Yi9JHzUpB6JccBU7NqDlDcV8QpX4GTTVlQIbN1Q==
+"@slidexyz/squads-sdk@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@slidexyz/squads-sdk/-/squads-sdk-0.4.0.tgz#1c4c33b650422eadfff14f003ecb6e1a08a55601"
+  integrity sha512-VXm5l//sp4dDu7NTXgih0xot3En/OoxCWMrmut9zEQdo1/6u3bBUfmReke7/BZcxj1NzyMqj7QlkkHphr61gvw==
   dependencies:
     "@project-serum/anchor" "^0.22.1"
     "@solana/buffer-layout" "^4.0.0"

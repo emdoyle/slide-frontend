@@ -18,7 +18,7 @@ import {
   getSquad,
   getSquadMintAddressAndBump,
   getSquadTreasuryAddressAndBump,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  SQUADS_PROGRAM_ID,
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
 import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
@@ -127,13 +127,13 @@ export const createSquadsWithdrawalProposal = async (
   }
   const squad = await getSquad(connection, managerData.squad);
   const [squadTreasury] = await getSquadTreasuryAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     managerData.squad
   );
   const instructions: TransactionInstruction[] = [];
   const { proposal } = await withCreateProposalAccount(
     instructions,
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     managerData.squad,
     squad.proposalNonce + 1,
@@ -166,11 +166,11 @@ export const executeWithdrawalProposal = async (
     proposal
   );
   const [squadMint] = await getSquadMintAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     managerData.squad
   );
   const [squadTreasury] = await getSquadTreasuryAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     managerData.squad
   );
   await program.methods

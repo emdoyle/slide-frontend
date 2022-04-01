@@ -2,7 +2,7 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   getSquadMintAddressAndBump,
   getSquadTreasuryAddressAndBump,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  SQUADS_PROGRAM_ID,
   withAddMembersToSquad,
   withCastVote,
   withCreateSquad,
@@ -28,7 +28,7 @@ const createSquad = async (
   const instructions: TransactionInstruction[] = [];
   const { squad } = await withCreateSquad(
     instructions,
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     name ?? "my squad",
     "it's cool",
@@ -36,13 +36,9 @@ const createSquad = async (
     60,
     40
   );
-  await withAddMembersToSquad(
-    instructions,
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-    user,
-    squad,
-    [[user, new BN(100_000)]]
-  );
+  await withAddMembersToSquad(instructions, SQUADS_PROGRAM_ID, user, squad, [
+    [user, new BN(100_000)],
+  ]);
 
   // @ts-ignore
   await utils.flushInstructions(program, instructions, []);
@@ -67,7 +63,7 @@ const approveProposal = async (
   const instructions: TransactionInstruction[] = [];
   const { voteAccount } = await withCastVote(
     instructions,
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     squadPubkey,
     proposalPubkey,
@@ -110,7 +106,7 @@ const executeAccessProposal = async (
     proposalPubkey
   );
   const [squadMint] = await getSquadMintAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     squadPubkey
   );
   await program.methods
@@ -155,11 +151,11 @@ const executeWithdrawalProposal = async (
     proposalPubkey
   );
   const [squadMint] = await getSquadMintAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     squadPubkey
   );
   const [squadTreasury] = await getSquadTreasuryAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     squadPubkey
   );
   await program.methods

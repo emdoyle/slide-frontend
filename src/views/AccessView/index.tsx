@@ -14,10 +14,7 @@ import {
 import { AccessRecordCard } from "./AccessRecordCard";
 import { useRouter } from "next/router";
 import { PublicKey } from "@solana/web3.js";
-import {
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
-  getProposals,
-} from "@slidexyz/squads-sdk";
+import { SQUADS_PROGRAM_ID, getProposals } from "@slidexyz/squads-sdk";
 import { useAlert } from "react-alert";
 import { PendingAccessProposal } from "./PendingAccessProposal";
 import { CreateAccessProposalModal } from "./CreateAccessProposalModal";
@@ -157,7 +154,7 @@ const ProposalContent = ({
       try {
         if (expenseManager.account.squad) {
           const proposalItems = await getProposals(
-            SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+            SQUADS_PROGRAM_ID,
             connection,
             expenseManager.account.squad
           );

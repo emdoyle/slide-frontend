@@ -1,6 +1,6 @@
 import {
   getSquadMintAddressAndBump,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
 import { ExpenseManagerItem, ProposalInfo } from "types";
 import { FC, useState } from "react";
@@ -43,7 +43,7 @@ const executeAccessProposal = async (
       proposal
     );
     const [squadMint] = await getSquadMintAddressAndBump(
-      SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+      SQUADS_PROGRAM_ID,
       expenseManager.account.squad
     );
     await program.methods

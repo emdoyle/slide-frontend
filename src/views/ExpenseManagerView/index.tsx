@@ -12,7 +12,7 @@ import {
   getSquadMintAddressAndBump,
   getSquads,
   SquadItem,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
@@ -177,9 +177,7 @@ const CreateExpenseManagerModal = ({
   const fetchSquads = async () => {
     setSquadsLoading(true);
     try {
-      setAllSquads(
-        await getSquads(SQUADS_CUSTOM_DEVNET_PROGRAM_ID, connection)
-      );
+      setAllSquads(await getSquads(SQUADS_PROGRAM_ID, connection));
     } catch (err) {
       if (err instanceof Error) {
         Alert.error(err.message);
@@ -285,7 +283,7 @@ const CreateExpenseManagerModal = ({
         return;
       }
       [govTokenMint] = await getSquadMintAddressAndBump(
-        SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+        SQUADS_PROGRAM_ID,
         squad.pubkey
       );
     }
@@ -324,7 +322,7 @@ const CreateExpenseManagerModal = ({
         .instruction();
     } else {
       const [memberEquityRecord] = await getMemberEquityAddressAndBump(
-        SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+        SQUADS_PROGRAM_ID,
         userPublicKey,
         // @ts-ignore
         squad?.pubkey

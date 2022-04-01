@@ -15,7 +15,7 @@ import {
 } from "@solana/spl-governance";
 import {
   getSquad,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  SQUADS_PROGRAM_ID,
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
 import { capitalize } from "../../utils/formatting";
@@ -128,7 +128,7 @@ export const createSquadsAccessProposal = async (
   const instructions: TransactionInstruction[] = [];
   await withCreateProposalAccount(
     instructions,
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     managerData.squad,
     squad.proposalNonce + 1,

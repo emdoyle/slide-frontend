@@ -8,7 +8,7 @@ import { constants, address, Slide } from "@slidexyz/slide-sdk";
 import { Program } from "@project-serum/anchor";
 import {
   getMemberEquityAddressAndBump,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
 import { Loader } from "components";
 import { useAlert } from "react-alert";
@@ -129,7 +129,7 @@ const submitSquadsPackage = async (
     return "Manager not setup for Squads";
   }
   const [memberEquity] = await getMemberEquityAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     managerData.squad
   );
@@ -157,7 +157,7 @@ const approveSquadsPackage = async (
     return "Manager not setup for Squads";
   }
   const [memberEquity] = await getMemberEquityAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     managerData.squad
   );
@@ -191,7 +191,7 @@ const denySquadsPackage = async (
     return "Manager not setup for Squads";
   }
   const [memberEquity] = await getMemberEquityAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     managerData.squad
   );

@@ -6,7 +6,7 @@ import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
 import BN from "bn.js";
 import {
   getMemberEquityAddressAndBump,
-  SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+  SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
 
 export const createSPLExpensePackage = async (
@@ -113,7 +113,7 @@ export const createSquadsExpensePackage = async (
     program.programId
   );
   const [memberEquity] = await getMemberEquityAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     managerData.squad
   );
@@ -154,7 +154,7 @@ export const updateSquadsExpensePackage = async (
     program.programId
   );
   const [memberEquity] = await getMemberEquityAddressAndBump(
-    SQUADS_CUSTOM_DEVNET_PROGRAM_ID,
+    SQUADS_PROGRAM_ID,
     user,
     managerData.squad
   );
