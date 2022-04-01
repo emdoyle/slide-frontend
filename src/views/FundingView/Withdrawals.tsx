@@ -124,10 +124,11 @@ export const PendingWithdrawalProposal = ({
           <button
             className="btn w-24"
             onClick={() => {
-              executeProposal();
-              if (refetchHistory) {
-                refetchHistory();
-              }
+              executeProposal().then(() => {
+                if (refetchHistory) {
+                  refetchHistory();
+                }
+              });
             }}
           >
             Execute

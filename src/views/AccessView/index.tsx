@@ -114,6 +114,7 @@ export const AccessView: FC = ({}) => {
                     expenseManager={expenseManager}
                     modalOpen={modalOpen}
                     setModalOpen={setModalOpen}
+                    refetchAccessRecords={fetchAccessRecords}
                   />
                 )}
                 {!!accessRecords.length && (
@@ -138,10 +139,12 @@ const ProposalContent = ({
   expenseManager,
   modalOpen,
   setModalOpen,
+  refetchAccessRecords,
 }: {
   expenseManager: ExpenseManagerItem;
   modalOpen: boolean;
   setModalOpen: (open: boolean) => void;
+  refetchAccessRecords: () => void;
 }) => {
   const Alert = useAlert();
   const { connection } = useConnection();
@@ -230,6 +233,10 @@ const ProposalContent = ({
                 key={proposal.pubkey.toString()}
                 proposal={proposal}
                 expenseManager={expenseManager}
+                refetchAccessRecords={() => {
+                  refetchAccessRecords();
+                  fetchProposals();
+                }}
               />
             ))}
           </div>

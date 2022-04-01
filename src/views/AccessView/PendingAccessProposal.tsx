@@ -127,10 +127,11 @@ export const PendingAccessProposal: FC<Props> = ({
           <button
             className="btn w-24"
             onClick={() => {
-              executeProposal();
-              if (refetchAccessRecords) {
-                refetchAccessRecords();
-              }
+              executeProposal().then(() => {
+                if (refetchAccessRecords) {
+                  refetchAccessRecords();
+                }
+              });
             }}
           >
             Execute
