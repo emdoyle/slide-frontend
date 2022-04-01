@@ -15,7 +15,7 @@ import { Loader } from "components";
 import { useSlideProgram } from "utils/useSlide";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAlert } from "react-alert";
-import { overflowEllipses } from "utils/proposals";
+import { overflowEllipses, overflowEllipsesPerLine } from "utils/proposals";
 
 type Props = {
   proposal: ProposalInfo;
@@ -103,7 +103,10 @@ export const PendingAccessProposal: FC<Props> = ({
       <div className="flex justify-between items-center p-4">
         <div className="flex justify-start items-center p-4">
           {proposal.description.trimEnd() ? (
-            <div className="tooltip" data-tip={proposal.description}>
+            <div
+              className="tooltip"
+              data-tip={overflowEllipsesPerLine(proposal.description, 30)}
+            >
               <h2 className="text-lg text-black">
                 {overflowEllipses(proposal.title.trimEnd(), 50)}
               </h2>

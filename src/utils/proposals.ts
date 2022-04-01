@@ -73,7 +73,7 @@ export const parseSquadsProposal = (
 };
 
 const parseSPLProposalContent = (proposal: ProposalInfo): string => {
-  return overflowEllipses(proposal.title, 60);
+  return overflowEllipses(proposal.title.trimEnd(), 60);
 };
 
 export const parseSPLProposal = (proposal: ProposalInfo): [string, string] => {
@@ -97,4 +97,14 @@ export const overflowEllipses = (
   if (content.length < maxLength) return content;
 
   return `${content.slice(0, maxLength)}...`;
+};
+
+export const overflowEllipsesPerLine = (
+  content: string,
+  maxLength: number = 24
+): string => {
+  const lines = content.split("\n");
+  return lines
+    .map((line) => overflowEllipses(line.trimEnd(), maxLength))
+    .join("\n");
 };
