@@ -17,11 +17,11 @@ export const HomeView: FC = ({}) => {
         <div className="text-center pt-2">
           <div className="hero min-h-16 py-4">
             <div className="flex flex-col items-start text-center hero-content">
-              <h1 className="mb-2 text-6xl font-bold w-full text-center text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-pink-500 via-violet-800 animate-gradient-x">
+              <h1 className="mb-2 text-4xl lg:text-6xl font-bold w-full text-center text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-pink-500 via-violet-800 animate-gradient-x">
                 Expenses, Simplified
               </h1>
               <div className="flex w-full justify-center items-center">
-                <p className="mb-2 text-2xl w-1/2 text-center">
+                <p className="mb-2 text-xl lg:text-2xl w-1/2 text-center">
                   Slide offers a new way for your DAO to manage expenses and
                   reimbursements.
                 </p>
@@ -33,13 +33,13 @@ export const HomeView: FC = ({}) => {
                   </button>
                 </Link>
               </div>
-              <div className="mb-10 card text-black bg-gray-200 w-2/3 m-auto shadow-xl">
+              <div className="mb-10 card text-black bg-gray-200 w-3/4 lg:w-2/3 m-auto shadow-xl">
                 <div className="card-body">
-                  <div className="flex items-center gap-6">
+                  <div className="flex flex-col lg:flex-row items-center gap-6">
                     <span>
-                      <LightBulbIcon className="w-16 h-16" />
+                      <LightBulbIcon className="w-8 h-8 lg:w-16 lg:h-16" />
                     </span>
-                    <p className="mb-2 text-3xl">
+                    <p className="mb-2 text-l lg:text-3xl">
                       Spinning up a Slide{" "}
                       <span
                         className="link hover:text-accent"
@@ -57,14 +57,14 @@ export const HomeView: FC = ({}) => {
               <br />
               <div className="flex gap-4 items-center">
                 <AcademicCapIcon className="w-16 h-16" />
-                <h3 className="mb-2 text-4xl font-semibold text-left">
+                <h3 className="mb-2 text-2xl lg:text-4xl font-semibold text-left">
                   How it works
                 </h3>
               </div>
               <div className="mb-10 w-full flex justify-between items-center">
-                <div className="card text-black bg-gray-200 w-2/3 shadow-xl">
+                <div className="card text-black bg-gray-200 w-full md:w-2/3 shadow-xl">
                   <div className="card-body">
-                    <p className="text-3xl text-left">
+                    <p className="text-xl lg:text-3xl text-left">
                       Once your DAO has voted to fund your Expense Manager and
                       assigned a few Reviewers, any DAO member can submit their
                       Expenses for reimbursement.
@@ -74,9 +74,9 @@ export const HomeView: FC = ({}) => {
               </div>
               <div className="mb-10 w-full flex justify-between items-center">
                 <div />
-                <div className="card text-black bg-gray-200 w-2/3 shadow-xl">
+                <div className="card text-black bg-gray-200 w-full md:w-2/3 shadow-xl">
                   <div className="card-body">
-                    <p className="text-3xl text-left">
+                    <p className="text-xl lg:text-3xl text-left">
                       Slide is deeply integrated with DAO primitives from both{" "}
                       <span
                         className="link hover:text-accent"
@@ -101,9 +101,9 @@ export const HomeView: FC = ({}) => {
                 </div>
               </div>
               <div className="mb-10 w-full flex justify-between items-center">
-                <div className="card text-black bg-gray-200 w-2/3 shadow-xl">
+                <div className="card text-black bg-gray-200 w-full md:w-2/3 shadow-xl">
                   <div className="card-body">
-                    <p className="text-3xl text-left">
+                    <p className="text-xl lg:text-3xl text-left">
                       Slide will create Proposals using these tools, so that
                       your DAO&apos;s existing governance process remains in
                       control of all privileged actions.

@@ -16,7 +16,7 @@ export const Nav: FC<{}> = ({ children }) => {
             <span className="text-4xl">🌐</span>
           </button>
         </Link>
-        <div className={`pl-2 pr-8 ml-2 mr-6 ${children && "border-r-2"}`}>
+        <div className={`pl-2 ml-2 ${children && "pr-8 mr-6 border-r-2"}`}>
           <span className="text-lg font-bold">Slide</span>
         </div>
         {children}

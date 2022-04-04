@@ -113,15 +113,17 @@ export const ExpenseManagerView: FC = ({}) => {
 
                 {!connected && <PromptConnectWallet />}
 
-                <CreateExpenseManagerModal
-                  open={open}
-                  close={(success) => {
-                    setOpen(false);
-                    if (success) {
-                      fetchExpenseManagers();
-                    }
-                  }}
-                />
+                {connected && (
+                  <CreateExpenseManagerModal
+                    open={open}
+                    close={(success) => {
+                      setOpen(false);
+                      if (success) {
+                        fetchExpenseManagers();
+                      }
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>
