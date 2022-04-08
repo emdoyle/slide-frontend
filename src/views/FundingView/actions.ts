@@ -1,6 +1,11 @@
 import { Program } from "@project-serum/anchor";
 import { constants, Slide, utils } from "@slidexyz/slide-sdk";
-import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import {
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  TransactionInstruction,
+} from "@solana/web3.js";
 import { ExpenseManagerItem } from "types";
 import {
   AccountMetaData,
@@ -23,12 +28,14 @@ import {
 } from "@slidexyz/squads-sdk";
 import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 import { displayPubkey } from "utils/formatting";
+import BN from "bn.js";
 
 export const createSPLWithdrawalProposal = async (
   program: Program<Slide>,
   connection: Connection,
   user: PublicKey,
-  expenseManager: ExpenseManagerItem
+  expenseManager: ExpenseManagerItem,
+  lamports: number
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
@@ -49,7 +56,7 @@ export const createSPLWithdrawalProposal = async (
     user
   );
   const instruction: TransactionInstruction = await program.methods
-    .splGovWithdrawFromExpenseManager(managerData.realm)
+    .splGovWithdrawFromExpenseManager(managerData.realm, new BN(lamports))
     .accounts({
       expenseManager: expenseManager.publicKey,
       governanceAuthority: managerData.governanceAuthority,
@@ -70,7 +77,9 @@ export const createSPLWithdrawalProposal = async (
     managerData.realm,
     managerData.governanceAuthority,
     tokenOwnerRecord,
-    `[SLIDE] Withdraw all funds from expense manager ${expenseManager.publicKey.toString()}`,
+    `[SLIDE] Withdraw ${(lamports / LAMPORTS_PER_SOL).toFixed(
+      6
+    )}◎ from expense manager ${expenseManager.publicKey.toString()}`,
     "",
     managerData.membershipTokenMint,
     user,

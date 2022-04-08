@@ -50,12 +50,12 @@ export const CreateWithdrawProposalModal = ({
     const managerData = expenseManager.account;
     let alertText;
     if (managerData.realm && managerData.governanceAuthority) {
-      // TODO: use lamports as input
       alertText = await createSPLWithdrawalProposal(
         program,
         connection,
         userPublicKey,
-        expenseManager
+        expenseManager,
+        lamports
       );
     } else {
       alertText = await createSquadsWithdrawalProposal(

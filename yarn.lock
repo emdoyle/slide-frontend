@@ -395,10 +395,10 @@
   resolved "https://registry.npmjs.org/@sideway/pinpoint/-/pinpoint-2.0.0.tgz"
   integrity sha512-RNiOoTPkptFtSVzQevY/yWtZwf/RxyVnPy/OcA9HBM3MlGDnBEYL5B41H0MTn0Uec8Hi+2qUtTfG2WWZBmMejQ==
 
-"@slidexyz/slide-sdk@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@slidexyz/slide-sdk/-/slide-sdk-0.2.1.tgz#bd2a422a6038a9f0eb4f99160554b334f5266819"
-  integrity sha512-LypHKZdjS1Bbzxz2zSwPflkv6Ha2mf5o0XdrkDBoBkB4V8oZQ93AQaHNfHNeIRXmO//C8Dz33JZPmqGj0L7YAw==
+"@slidexyz/slide-sdk@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@slidexyz/slide-sdk/-/slide-sdk-0.3.0.tgz#b2b33bfab9e8e13693481947ae03f1b6f5d3855e"
+  integrity sha512-fi/chFY3iFRz78tjM1FGaYQIAAZ2uMZBM/ieMULHLSpCCwGimkRDargdMLM20E3/Z+lY/Oi3OcEZzbqsBJl1YA==
   dependencies:
     "@project-serum/anchor" "^0.22.1"
     "@solana/buffer-layout" "^4.0.0"
