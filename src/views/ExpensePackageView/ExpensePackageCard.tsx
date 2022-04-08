@@ -12,6 +12,7 @@ import {
 } from "@slidexyz/squads-sdk";
 import { Loader } from "components";
 import { useAlert } from "react-alert";
+import { displayPubkey } from "../../utils/formatting";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
@@ -324,9 +325,17 @@ export const ExpensePackageCard: FC<Props> = ({
   return (
     <div className="bordered w-full compact rounded-md bg-white">
       <div className="flex justify-between items-center p-4">
-        <h2 className="text-lg text-black">
-          {packageData.name} {quantityDisplay}◎
-        </h2>
+        <div className="flex flex-col text-left">
+          <h2 className="text-lg text-black">
+            {packageData.name} {quantityDisplay}◎
+          </h2>
+          <p className="text-md text-gray-500 text-opacity-95 pl-3">
+            Description: {packageData.description}
+          </p>
+          <p className="text-md text-gray-500 text-opacity-95 pl-3">
+            Owner: {displayPubkey(packageData.owner)}
+          </p>
+        </div>
         {isLoading && (
           <div>
             <Loader noText color="black" />
