@@ -329,9 +329,11 @@ export const ExpensePackageCard: FC<Props> = ({
           <h2 className="text-lg text-black">
             {packageData.name} {quantityDisplay}◎
           </h2>
-          <p className="text-md text-gray-500 text-opacity-95 pl-3">
-            Description: {packageData.description}
-          </p>
+          {packageData.description.trim() && (
+            <p className="text-md text-gray-500 text-opacity-95 pl-3">
+              Description: {packageData.description}
+            </p>
+          )}
           <p className="text-md text-gray-500 text-opacity-95 pl-3">
             Owner: {displayPubkey(packageData.owner)}
           </p>

@@ -1,15 +1,15 @@
 import { Program } from "@project-serum/anchor";
-import { constants, Slide, utils } from "@slidexyz/slide-sdk";
+import { constants, Slide } from "@slidexyz/slide-sdk";
 import {
   Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
+  Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
 import { ExpenseManagerItem } from "types";
 import {
   AccountMetaData,
-  getAllProposals,
   getGovernance,
   getNativeTreasuryAddress,
   getTokenOwnerRecordAddress,
@@ -29,6 +29,7 @@ import {
 import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 import { displayPubkey } from "utils/formatting";
 import BN from "bn.js";
+import { postTransaction } from "../../utils/proxy";
 
 export const createSPLWithdrawalProposal = async (
   program: Program<Slide>,
@@ -117,8 +118,9 @@ export const createSPLWithdrawalProposal = async (
     tokenOwnerRecord
   );
 
-  // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
+  const transaction = new Transaction();
+  transaction.add(...instructions);
+  await postTransaction(connection, program.provider.wallet, transaction);
 
   return `Created proposal: ${displayPubkey(proposal)}`;
 };
@@ -153,8 +155,9 @@ export const createSquadsWithdrawalProposal = async (
     ["Approve", "Deny"]
   );
 
-  // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
+  const transaction = new Transaction();
+  transaction.add(...instructions);
+  await postTransaction(connection, program.provider.wallet, transaction);
 
   return `Created proposal: ${displayPubkey(proposal)}`;
 };
@@ -182,7 +185,7 @@ export const executeWithdrawalProposal = async (
     SQUADS_PROGRAM_ID,
     managerData.squad
   );
-  await program.methods
+  const transaction = await program.methods
     .squadsExecuteWithdrawalProposal()
     .accounts({
       proposal,
@@ -193,6 +196,11 @@ export const executeWithdrawalProposal = async (
       proposalExecution,
       signer: user,
     })
-    .rpc();
+    .transaction();
+  await postTransaction(
+    program.provider.connection,
+    program.provider.wallet,
+    transaction
+  );
   return `Withdrawal Proposal executed!`;
 };

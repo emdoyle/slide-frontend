@@ -14,7 +14,11 @@ import {
   SquadItem,
   SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import {
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from "@solana/web3.js";
 import {
   getAllGovernances,
   getNativeTreasuryAddress,
@@ -30,6 +34,7 @@ import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
 import base58 from "bs58";
+import { postTransaction } from "../../utils/proxy";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -214,6 +219,11 @@ const CreateExpenseManagerModal = ({
   const fetchTreasuries = async (realmPubkey: PublicKey) => {
     setTreasuriesLoading(true);
     try {
+      // TODO:
+      //   backend Program assumes that the governance is a 'token' governance
+      //   because this is what the Realms UI creates when creating a native
+      //   treasury. but it is possible to create other types of governances
+      //   which also have a native treasury attached
       const governances = await getAllGovernances(
         connection,
         SPL_GOV_PROGRAM_ID,
@@ -246,7 +256,7 @@ const CreateExpenseManagerModal = ({
       if (err instanceof Error) {
         Alert.error(err.message);
       } else {
-        Alert.error("An unknown error occurred when fetching Squads.");
+        Alert.error("An unknown error occurred when fetching Treasuries.");
       }
     } finally {
       setTreasuriesLoading(false);
@@ -345,12 +355,9 @@ const CreateExpenseManagerModal = ({
         .instruction();
     }
 
-    await utils.flushInstructions(
-      // @ts-ignore
-      program,
-      [createManager, initializeManager],
-      []
-    );
+    const txn = new Transaction();
+    txn.add(createManager, initializeManager);
+    await postTransaction(connection, program.provider.wallet, txn);
   };
 
   return (

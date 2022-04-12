@@ -1,7 +1,6 @@
 import { FC, useEffect, useState } from "react";
-import { Loader, Nav } from "components";
+import { Loader } from "components";
 
-import styles from "./index.module.css";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
