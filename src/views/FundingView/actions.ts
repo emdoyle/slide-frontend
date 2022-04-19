@@ -40,7 +40,7 @@ export const createSPLWithdrawalProposal = async (
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    throw new Error("Manager not set up for SPL");
+    throw new Error("Manager not set up for Realms");
   }
   const governanceData = await getGovernance(
     connection,

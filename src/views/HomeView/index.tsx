@@ -86,7 +86,7 @@ export const HomeView: FC = ({}) => {
                           )
                         }
                       >
-                        SPL Governance
+                        Realms
                       </span>{" "}
                       and{" "}
                       <span

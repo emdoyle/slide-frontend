@@ -31,7 +31,7 @@ const submitSPLPackage = async (
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not setup for SPL";
+    return "Manager not setup for Realms";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
     constants.SPL_GOV_PROGRAM_ID,
@@ -59,7 +59,7 @@ const approveSPLPackage = async (
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not setup for SPL";
+    return "Manager not setup for Realms";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
     constants.SPL_GOV_PROGRAM_ID,
@@ -93,7 +93,7 @@ const denySPLPackage = async (
   const packageData = expensePackage.account;
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not setup for SPL";
+    return "Manager not setup for Realms";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
     constants.SPL_GOV_PROGRAM_ID,

@@ -20,7 +20,7 @@ export const createSPLExpensePackage = async (
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not set up for SPL";
+    return "Manager not set up for Realms";
   }
   const [expensePackage] = address.getExpensePackageAddressAndBump(
     expenseManager.publicKey,
@@ -68,7 +68,7 @@ export const updateSPLExpensePackage = async (
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not set up for SPL";
+    return "Manager not set up for Realms";
   }
   const [expensePackage] = address.getExpensePackageAddressAndBump(
     expenseManager.publicKey,

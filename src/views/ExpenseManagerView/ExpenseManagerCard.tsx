@@ -38,7 +38,7 @@ export const ExpenseManagerCard: FC<Props> = ({ expenseManager }) => {
                 usingSPL ? "badge-secondary" : "badge-primary"
               }`}
             >
-              {usingSPL ? "SPL Gov" : "Squads"}
+              {usingSPL ? "Realms" : "Squads"}
             </span>
           </div>
           <h2 className="text-lg text-black">{balanceDisplay}</h2>

@@ -387,7 +387,7 @@ const CreateExpenseManagerModal = ({
               className="label cursor-pointer pl-2 pr-8"
               htmlFor="radioSPL"
             >
-              SPL Governance
+              Realms
             </label>
             <input
               disabled={isSubmitting}

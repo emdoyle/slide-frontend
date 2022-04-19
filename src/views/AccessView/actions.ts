@@ -36,7 +36,7 @@ export const createSPLAccessProposal = async (
 ): Promise<string | undefined> => {
   const managerData = expenseManager.account;
   if (!managerData.realm || !managerData.governanceAuthority) {
-    return "Manager not set up for SPL";
+    return "Manager not set up for Realms";
   }
   const proposalCount = (
     await getGovernance(connection, managerData.governanceAuthority)
