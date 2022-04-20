@@ -1,8 +1,7 @@
 import { FC, useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Loader, Nav, PromptConnectWallet } from "components";
+import { Loader, PromptConnectWallet } from "components";
 
-import styles from "./index.module.css";
 import { PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { useRouter } from "next/router";
@@ -146,9 +145,9 @@ export const FundingView: FC = ({}) => {
 
   return (
     <div className="text-center pt-2">
-      <div className="hero min-h-16 py-4">
+      <div className="hero min-h-16 p-0 pt-10">
         <div className="text-center hero-content">
-          <div className="max-w-lg">
+          <div className="w-full">
             {expenseManager ? (
               <h1 className="mb-5 text-5xl">
                 Funding for{" "}

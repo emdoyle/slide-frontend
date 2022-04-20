@@ -80,24 +80,20 @@ export const ExpensePackageView: FC = ({}) => {
       <div className="hero min-h-16 p-0 pt-10">
         <div className="text-center hero-content w-full">
           <div className="w-full">
-            <div className="text-center">
-              {expenseManager ? (
-                <h1 className="mb-5 text-5xl">
-                  Expenses for{" "}
-                  <span className="font-bold">
-                    {expenseManager.account.name}
-                  </span>
-                </h1>
-              ) : (
-                <h1 className="mb-5 text-5xl">Expenses</h1>
-              )}
-              <p className="mb-5 text-2xl">
-                Create and submit expenses for reimbursement.
-                <br />
-                If you&apos;re an officer, you can review expenses and either
-                Approve or Deny them.
-              </p>
-            </div>
+            {expenseManager ? (
+              <h1 className="mb-5 text-5xl">
+                Expenses for{" "}
+                <span className="font-bold">{expenseManager.account.name}</span>
+              </h1>
+            ) : (
+              <h1 className="mb-5 text-5xl">Expenses</h1>
+            )}
+            <p className="mb-5 text-2xl">
+              Create and submit expenses for reimbursement.
+              <br />
+              If you&apos;re an officer, you can review expenses and either
+              Approve or Deny them.
+            </p>
             {!isLoading && connected && expenseManager && (
               <>
                 <button

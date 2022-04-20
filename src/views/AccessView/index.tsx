@@ -80,9 +80,9 @@ export const AccessView: FC = ({}) => {
 
   return (
     <div className="text-center pt-2">
-      <div className="hero min-h-16 py-4">
+      <div className="hero min-h-16 p-0 pt-10">
         <div className="text-center hero-content">
-          <div className="max-w-lg">
+          <div className="w-full">
             {expenseManager ? (
               <h1 className="mb-5 text-5xl">
                 Access Controls for{" "}
@@ -98,16 +98,14 @@ export const AccessView: FC = ({}) => {
 
             {connected && !isLoading && query?.pubkey && (
               <>
-                <div className="flex flex-col gap-2 justify-center mt-5">
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      setModalOpen(true);
-                    }}
-                  >
-                    Request Access
-                  </button>
-                </div>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setModalOpen(true);
+                  }}
+                >
+                  Request Access
+                </button>
                 {expenseManager && (
                   <ProposalContent
                     expenseManager={expenseManager}
