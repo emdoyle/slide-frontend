@@ -8,7 +8,6 @@ import {
   getMemberEquityAddressAndBump,
   SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import { postTransaction } from "../../utils/proxy";
 
 export const createSPLExpensePackage = async (
   program: Program<Slide>,
@@ -35,7 +34,7 @@ export const createSPLExpensePackage = async (
     user
   );
 
-  const transaction = await program.methods
+  await program.methods
     .splGovCreateExpensePackage(
       managerData.realm,
       managerData.expensePackageNonce,
@@ -49,12 +48,7 @@ export const createSPLExpensePackage = async (
       tokenOwnerRecord,
       owner: user,
     })
-    .transaction();
-  await postTransaction(
-    program.provider.connection,
-    program.provider.wallet,
-    transaction
-  );
+    .rpc();
 };
 
 export const updateSPLExpensePackage = async (
@@ -83,7 +77,7 @@ export const updateSPLExpensePackage = async (
     user
   );
 
-  const transaction = await program.methods
+  await program.methods
     .splGovUpdateExpensePackage(
       managerData.realm,
       packageNonce,
@@ -97,12 +91,7 @@ export const updateSPLExpensePackage = async (
       tokenOwnerRecord,
       owner: user,
     })
-    .transaction();
-  await postTransaction(
-    program.provider.connection,
-    program.provider.wallet,
-    transaction
-  );
+    .rpc();
 };
 
 export const createSquadsExpensePackage = async (
@@ -128,7 +117,7 @@ export const createSquadsExpensePackage = async (
     user,
     managerData.squad
   );
-  const transaction = await program.methods
+  await program.methods
     .squadsCreateExpensePackage(
       managerData.expensePackageNonce,
       name,
@@ -142,12 +131,7 @@ export const createSquadsExpensePackage = async (
       squad: managerData.squad,
       owner: user,
     })
-    .transaction();
-  await postTransaction(
-    program.provider.connection,
-    program.provider.wallet,
-    transaction
-  );
+    .rpc();
 };
 
 export const updateSquadsExpensePackage = async (
@@ -174,7 +158,7 @@ export const updateSquadsExpensePackage = async (
     user,
     managerData.squad
   );
-  const transaction = await program.methods
+  await program.methods
     .squadsUpdateExpensePackage(
       packageNonce,
       name,
@@ -188,10 +172,5 @@ export const updateSquadsExpensePackage = async (
       squad: managerData.squad,
       owner: user,
     })
-    .transaction();
-  await postTransaction(
-    program.provider.connection,
-    program.provider.wallet,
-    transaction
-  );
+    .rpc();
 };

@@ -1,11 +1,6 @@
 import { Program } from "@project-serum/anchor";
 import { constants, Slide, utils } from "@slidexyz/slide-sdk";
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { ExpenseManagerItem } from "types";
 import {
   AccountMetaData,
@@ -24,7 +19,6 @@ import {
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
 import { capitalize } from "../../utils/formatting";
-import { postTransaction } from "../../utils/proxy";
 
 export const createSPLAccessProposal = async (
   program: Program<Slide>,
@@ -114,9 +108,8 @@ export const createSPLAccessProposal = async (
     tokenOwnerRecord
   );
 
-  const transaction = new Transaction();
-  transaction.add(...instructions);
-  await postTransaction(connection, program.provider.wallet, transaction);
+  // @ts-ignore
+  await utils.flushInstructions(program, instructions, []);
 };
 
 export const createSquadsAccessProposal = async (
@@ -146,7 +139,6 @@ export const createSquadsAccessProposal = async (
     ["Approve", "Deny"]
   );
 
-  const transaction = new Transaction();
-  transaction.add(...instructions);
-  await postTransaction(connection, program.provider.wallet, transaction);
+  // @ts-ignore
+  await utils.flushInstructions(program, instructions, []);
 };

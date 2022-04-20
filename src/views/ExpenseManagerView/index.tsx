@@ -14,11 +14,7 @@ import {
   SquadItem,
   SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import {
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   getAllGovernances,
   getNativeTreasuryAddress,
@@ -34,7 +30,6 @@ import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
 import base58 from "bs58";
-import { postTransaction } from "../../utils/proxy";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -355,9 +350,12 @@ const CreateExpenseManagerModal = ({
         .instruction();
     }
 
-    const txn = new Transaction();
-    txn.add(createManager, initializeManager);
-    await postTransaction(connection, program.provider.wallet, txn);
+    await utils.flushInstructions(
+      // @ts-ignore
+      program,
+      [createManager, initializeManager],
+      []
+    );
   };
 
   return (
