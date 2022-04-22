@@ -13,6 +13,8 @@ import {
 import { Loader } from "components";
 import { useAlert } from "react-alert";
 import { displayPubkey } from "../../utils/formatting";
+import { useSWRConfig } from "swr";
+import { EXPENSE_PACKAGES_KEY } from "../../utils/api";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
@@ -218,10 +220,10 @@ export const ExpensePackageCard: FC<Props> = ({
   expenseManager,
   expensePackage,
   canApproveAndDeny,
-  refetchExpensePackage,
   openUpdateModal,
 }) => {
   const Alert = useAlert();
+  const { mutate } = useSWRConfig();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -359,9 +361,7 @@ export const ExpensePackageCard: FC<Props> = ({
                 setIsLoading(true);
                 submitPackage()
                   .then(() => {
-                    if (refetchExpensePackage) {
-                      refetchExpensePackage();
-                    }
+                    mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
                   })
                   .catch((err: Error) => Alert.error(err.message))
                   .finally(() => setIsLoading(false));
@@ -382,9 +382,7 @@ export const ExpensePackageCard: FC<Props> = ({
                   setIsLoading(true);
                   approvePackage()
                     .then(() => {
-                      if (refetchExpensePackage) {
-                        refetchExpensePackage();
-                      }
+                      mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
                     })
                     .catch((err: Error) => Alert.error(err.message))
                     .finally(() => setIsLoading(false));
@@ -398,9 +396,7 @@ export const ExpensePackageCard: FC<Props> = ({
                   setIsLoading(true);
                   denyPackage()
                     .then(() => {
-                      if (refetchExpensePackage) {
-                        refetchExpensePackage();
-                      }
+                      mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
                     })
                     .catch((err: Error) => Alert.error(err.message))
                     .finally(() => setIsLoading(false));
@@ -429,9 +425,7 @@ export const ExpensePackageCard: FC<Props> = ({
                   setIsLoading(true);
                   withdrawPackage()
                     .then(() => {
-                      if (refetchExpensePackage) {
-                        refetchExpensePackage();
-                      }
+                      mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
                     })
                     .catch((err: Error) => Alert.error(err.message))
                     .finally(() => setIsLoading(false));

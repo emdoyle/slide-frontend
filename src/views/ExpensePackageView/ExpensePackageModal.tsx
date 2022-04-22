@@ -11,6 +11,8 @@ import {
   updateSquadsExpensePackage,
 } from "./actions";
 import BN from "bn.js";
+import { EXPENSE_PACKAGES_KEY } from "../../utils/api";
+import { useSWRConfig } from "swr";
 
 export const ExpensePackageModal = ({
   open,
@@ -19,13 +21,14 @@ export const ExpensePackageModal = ({
   packageToUpdate,
 }: {
   open: boolean;
-  close: (success?: boolean) => void;
+  close: () => void;
   expenseManager: ExpenseManagerItem;
   packageToUpdate?: ExpensePackageItem;
 }) => {
   const Alert = useAlert();
   const { publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
+  const { mutate } = useSWRConfig();
   const [name, setName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
@@ -151,7 +154,7 @@ export const ExpensePackageModal = ({
               submitForm()
                 .then(() => {
                   Alert.show("Success");
-                  close(true);
+                  mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
                 })
                 .catch((err: Error) => Alert.error(err.message))
                 .finally(() => setIsLoading(false));

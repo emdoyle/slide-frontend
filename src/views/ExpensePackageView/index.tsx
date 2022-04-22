@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 import { Loader } from "components";
@@ -8,72 +8,64 @@ import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
 import {
   AccessRecordItem,
-  ExpenseManager,
   ExpenseManagerItem,
-  ExpensePackage,
   ExpensePackageItem,
 } from "types";
 import { useRouter } from "next/router";
-import { address } from "@slidexyz/slide-sdk";
-import { useAlert } from "react-alert";
 import { ExpensePackageModal } from "./ExpensePackageModal";
+import { useSlideSWRImmutable } from "../../utils/api/fetchers";
+import {
+  ACCESS_RECORD_KEY,
+  EXPENSE_MANAGER_KEY,
+  EXPENSE_PACKAGES_KEY,
+} from "../../utils/api/data";
+import { useErrorAlert } from "../../utils/useErrorAlert";
 
 export const ExpensePackageView: FC = ({}) => {
-  const Alert = useAlert();
   const { connected, publicKey: userPublicKey } = useWallet();
   const { program } = useSlideProgram();
   const { query } = useRouter();
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [expenseManager, setExpenseManager] =
-    useState<ExpenseManagerItem | null>(null);
-  const [accessRecord, setAccessRecord] = useState<AccessRecordItem | null>(
-    null
-  );
+  const [expenseManagerPubkey, setExpenseManagerPubkey] =
+    useState<PublicKey | null>(null);
 
-  async function fetchData() {
-    if (program && userPublicKey && query?.pubkey) {
-      let expenseManagerPubkey;
-      try {
-        expenseManagerPubkey = new PublicKey(query.pubkey);
-      } catch {
-        Alert.show(
-          `Could not find expense manager for this page (pubkey: ${query.pubkey})`
-        );
-        return;
-      }
-      setIsLoading(true);
-      try {
-        const expenseManagerAccount: ExpenseManager =
-          await program.account.expenseManager.fetch(expenseManagerPubkey);
-        setExpenseManager({
-          account: expenseManagerAccount,
-          publicKey: expenseManagerPubkey,
-        });
-        const [accessRecordPubkey] = address.getAccessRecordAddressAndBump(
-          program.programId,
-          expenseManagerPubkey,
-          userPublicKey
-        );
-        const accessRecordAccount = await program.account.accessRecord.fetch(
-          accessRecordPubkey
-        );
-        setAccessRecord({
-          account: accessRecordAccount,
-          publicKey: accessRecordPubkey,
-        });
-      } catch {
-        // expected behavior for accessRecord to fail if it doesn't exist
-        // TODO: differentiate manager from access record failure
-      } finally {
-        setIsLoading(false);
-      }
+  if (!expenseManagerPubkey && query?.pubkey) {
+    try {
+      setExpenseManagerPubkey(new PublicKey(query.pubkey));
+    } catch {
+      // TODO: set an error message that shows up as a banner or blocking modal
     }
   }
 
-  useEffect(() => {
-    fetchData();
-  }, [program?.programId, query?.pubkey]);
+  const {
+    data: expenseManager,
+    error: expenseManagerError,
+    isValidating: expenseManagerValidating,
+  } = useSlideSWRImmutable<ExpenseManagerItem>(program, EXPENSE_MANAGER_KEY, [
+    expenseManagerPubkey,
+  ]);
+  useErrorAlert(expenseManagerError);
+  const isLoading = connected && !expenseManager && !expenseManagerError;
+
+  // no error alert necessary for access record
+  const { data: accessRecord, isValidating: accessRecordValidating } =
+    useSlideSWRImmutable<AccessRecordItem>(
+      program,
+      ACCESS_RECORD_KEY,
+      [expenseManagerPubkey, userPublicKey],
+      { shouldRetryOnError: false }
+    );
+
+  const {
+    data: expensePackages,
+    error: expensePackagesError,
+    isValidating: expensePackagesValidating,
+  } = useSlideSWRImmutable<ExpensePackageItem[]>(
+    program,
+    EXPENSE_PACKAGES_KEY,
+    [expenseManagerPubkey]
+  );
+  useErrorAlert(expensePackagesError);
 
   return (
     <div className="text-center pt-2">
@@ -94,7 +86,7 @@ export const ExpensePackageView: FC = ({}) => {
               If you&apos;re an officer, you can review expenses and either
               Approve or Deny them.
             </p>
-            {!isLoading && connected && expenseManager && (
+            {!isLoading && expenseManager && (
               <>
                 <button
                   className="btn btn-primary"
@@ -102,18 +94,14 @@ export const ExpensePackageView: FC = ({}) => {
                 >
                   + Create Expense
                 </button>
-                <ExpensePackageContent
-                  accessRecord={accessRecord}
+                <ExpensePackageList
+                  canApproveAndDeny={!!accessRecord}
                   expenseManager={expenseManager}
+                  expensePackages={expensePackages ?? []}
                 />
                 <ExpensePackageModal
                   open={open}
-                  close={(success) => {
-                    setOpen(false);
-                    if (success) {
-                      fetchData();
-                    }
-                  }}
+                  close={() => setOpen(false)}
                   expenseManager={expenseManager}
                 />
               </>
@@ -131,89 +119,16 @@ export const ExpensePackageView: FC = ({}) => {
   );
 };
 
-const ExpensePackageContent = ({
-  accessRecord,
-  expenseManager,
-}: {
-  accessRecord: AccessRecordItem | null;
-  expenseManager: ExpenseManagerItem;
-}) => {
-  const { connected } = useWallet();
-  const { program } = useSlideProgram();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [expensePackages, setExpensePackages] = useState<ExpensePackageItem[]>(
-    []
-  );
-
-  async function refetchExpensePackage(expensePackagePubkey: PublicKey) {
-    if (program) {
-      // @ts-ignore
-      const expensePackage: ExpensePackage =
-        await program.account.expensePackage.fetch(expensePackagePubkey);
-      setExpensePackages((prevPackages) => {
-        return prevPackages.map((currPackage) => {
-          if (currPackage.publicKey.equals(expensePackagePubkey)) {
-            return {
-              account: expensePackage,
-              publicKey: currPackage.publicKey,
-            };
-          }
-          return currPackage;
-        });
-      });
-    }
-  }
-
-  useEffect(() => {
-    async function getExpensePackages() {
-      if (program) {
-        const managerFilter = {
-          memcmp: { offset: 41, bytes: expenseManager.publicKey.toBase58() },
-        };
-        setExpensePackages(
-          // @ts-ignore
-          await program.account.expensePackage.all([managerFilter])
-        );
-      }
-    }
-    setIsLoading(true);
-    getExpensePackages().finally(() => setIsLoading(false));
-  }, [program?.programId]);
-
-  if (!connected) {
-    return <PromptConnectWallet />;
-  }
-
-  return (
-    <div className="my-10">
-      {isLoading ? (
-        <div>
-          <Loader />
-        </div>
-      ) : (
-        <ExpensePackageList
-          expenseManager={expenseManager}
-          expensePackages={expensePackages}
-          canApproveAndDeny={!!accessRecord}
-          refetchExpensePackage={refetchExpensePackage}
-        />
-      )}
-    </div>
-  );
-};
-
 type ExpensePackageListProps = {
   expenseManager: ExpenseManagerItem;
   expensePackages: ExpensePackageItem[];
   canApproveAndDeny?: boolean;
-  refetchExpensePackage?: (expenseManagerPubkey: PublicKey) => void;
 };
 
 const ExpensePackageList = ({
   expenseManager,
   expensePackages,
   canApproveAndDeny,
-  refetchExpensePackage,
 }: ExpensePackageListProps) => {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [packageToUpdate, setPackageToUpdate] = useState<
@@ -221,18 +136,13 @@ const ExpensePackageList = ({
   >();
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 my-4">
         {expensePackages.map((expensePackage) => (
           <ExpensePackageCard
             key={expensePackage.publicKey.toString()}
             expenseManager={expenseManager}
             expensePackage={expensePackage}
             canApproveAndDeny={canApproveAndDeny}
-            refetchExpensePackage={() => {
-              if (refetchExpensePackage) {
-                refetchExpensePackage(expensePackage.publicKey);
-              }
-            }}
             openUpdateModal={() => {
               setPackageToUpdate(expensePackage);
               setModalOpen(true);
@@ -242,12 +152,7 @@ const ExpensePackageList = ({
       </div>
       <ExpensePackageModal
         open={modalOpen}
-        close={(success) => {
-          setModalOpen(false);
-          if (success && packageToUpdate && refetchExpensePackage) {
-            refetchExpensePackage(packageToUpdate.publicKey);
-          }
-        }}
+        close={() => setModalOpen(false)}
         expenseManager={expenseManager}
         packageToUpdate={packageToUpdate}
       />

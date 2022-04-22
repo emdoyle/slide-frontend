@@ -1,5 +1,5 @@
 import React from "react";
-import { SWRConfig, useSWRConfig } from "swr";
+import { SWRConfig } from "swr";
 import type { AppProps } from "next/app";
 import dynamic from "next/dynamic";
 import { ConnectionProvider } from "@solana/wallet-adapter-react";
@@ -11,8 +11,7 @@ import "tailwindcss/tailwind.css";
 import "../styles/globals.css";
 import "../styles/App.css";
 import { PublicKey } from "@solana/web3.js";
-import { EXPENSE_MANAGERS_KEY } from "../utils/api";
-import { useSlideProgram } from "../utils/useSlide";
+import { serializePubkeysForCache } from "../utils/swrMiddleware";
 
 // localnet
 // const endpoint = "http://127.0.0.1:8899";
@@ -37,7 +36,7 @@ const AlertOptions = {
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <SWRConfig>
+    <SWRConfig value={{ use: [serializePubkeysForCache] }}>
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider>
           <SlideProgramProvider

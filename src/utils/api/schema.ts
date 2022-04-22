@@ -3,11 +3,15 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { Program } from "@project-serum/anchor";
 import {
   ACCESS_PROPOSALS_KEY,
+  ACCESS_RECORD_KEY,
   ACCESS_RECORDS_KEY,
+  EXPENSE_MANAGER_KEY,
   EXPENSE_MANAGERS_KEY,
   EXPENSE_PACKAGES_KEY,
   fetchAccessProposals,
+  fetchAccessRecord,
   fetchAccessRecords,
+  fetchExpenseManager,
   fetchExpenseManagers,
   fetchExpensePackages,
   fetchRealms,
@@ -24,7 +28,9 @@ export const SLIDE_SCHEMA: Record<
   string,
   (program: Program<Slide>, ...args: any[]) => Promise<any>
 > = {
+  [ACCESS_RECORD_KEY]: fetchAccessRecord,
   [ACCESS_RECORDS_KEY]: fetchAccessRecords,
+  [EXPENSE_MANAGER_KEY]: fetchExpenseManager,
   [EXPENSE_MANAGERS_KEY]: fetchExpenseManagers,
   [EXPENSE_PACKAGES_KEY]: fetchExpensePackages,
   [ACCESS_PROPOSALS_KEY]: fetchAccessProposals,

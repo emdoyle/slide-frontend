@@ -3,6 +3,7 @@ import { Slide } from "@slidexyz/slide-sdk";
 import { Program } from "@project-serum/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
 import useSWRImmutable from "swr/immutable";
+import { Key, SWRConfiguration } from "swr";
 
 export const SlideFetcher = async (
   program: Program<Slide>,
@@ -17,12 +18,20 @@ export const SlideFetcher = async (
 export function useSlideSWRImmutable<T>(
   program: Program<Slide> | undefined,
   apiMethod: string,
-  ...args: any[]
+  args?: any[],
+  options: SWRConfiguration = {}
 ) {
+  let key: Key;
+  if (args?.length) {
+    key = [apiMethod, ...args];
+  } else {
+    key = apiMethod;
+  }
   return useSWRImmutable<T>(
-    () => (program ? apiMethod : null),
-    async (apiMethod) =>
-      program ? await SlideFetcher(program, apiMethod, ...args) : null
+    () => (program ? key : null),
+    async (apiMethod, ...innerArgs) =>
+      program ? await SlideFetcher(program, apiMethod, ...innerArgs) : null,
+    options
   );
 }
 
