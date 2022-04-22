@@ -2,17 +2,15 @@ import { FC } from "react";
 import Link from "next/link";
 
 import { ExpenseManagerItem } from "types";
-import { useBalance } from "utils/useBalance";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
 };
 
 export const ExpenseManagerCard: FC<Props> = ({ expenseManager }) => {
-  const { balance: managerBalance } = useBalance(expenseManager.publicKey);
   let balanceDisplay;
-  if (managerBalance) {
-    balanceDisplay = `(Balance: ~${managerBalance.toFixed(2)}◎)`;
+  if (expenseManager.balance) {
+    balanceDisplay = `(Balance: ~${expenseManager.balance.toFixed(2)}◎)`;
   } else {
     balanceDisplay = "";
   }
@@ -30,7 +28,7 @@ export const ExpenseManagerCard: FC<Props> = ({ expenseManager }) => {
       <div className="flex justify-between items-center p-4">
         <div className="flex w-full p-4 justify-between items-center">
           <div className="flex flex-col justify-start">
-            <h2 className="text-lg text-black">
+            <h2 className="text-lg text-black text-left pl-1">
               {expenseManager.account.name}
             </h2>
             <span

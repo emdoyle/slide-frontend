@@ -16,6 +16,7 @@ export type ExpenseManager = {
 export type ExpenseManagerItem = {
   account: ExpenseManager;
   publicKey: PublicKey;
+  balance?: number;
 };
 
 export type ExpensePackage = {

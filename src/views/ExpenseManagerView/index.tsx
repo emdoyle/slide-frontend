@@ -1,4 +1,5 @@
 import { FC, useEffect, useState } from "react";
+import { useSWRConfig } from "swr";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 import { Loader, Nav } from "components";
@@ -30,41 +31,21 @@ import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
 import base58 from "bs58";
+import { EXPENSE_MANAGERS_KEY } from "../../utils/api";
+import { useSlideSWRImmutable } from "../../utils/api/fetchers";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
-  const [expenseManagers, setExpenseManagers] = useState<ExpenseManagerItem[]>(
-    []
-  );
   const { program } = useSlideProgram();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
   const [query, setQuery] = useState<string>("");
-
-  async function fetchExpenseManagers() {
-    if (program) {
-      setIsLoading(true);
-      try {
-        // TODO: filter these by membership.. maybe async?
-        //   would be annoyingly slow to issue membership checks for each manager
-        //   although for a demo it's not that bad (like 2 managers)
-        setExpenseManagers(await program.account.expenseManager.all());
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  }
-
-  useEffect(() => {
-    fetchExpenseManagers();
-  }, [program?.programId]);
-
-  const filteredExpenseManagers = expenseManagers.filter(
-    (expenseManager) =>
-      !query ||
-      expenseManager.account.name.toLowerCase().includes(query.toLowerCase())
-  );
-
+  const { mutate } = useSWRConfig();
+  const {
+    data: expenseManagers,
+    error,
+    isValidating, // TODO: subtle spinner on the side of the screen
+  } = useSlideSWRImmutable<ExpenseManagerItem[]>(program, EXPENSE_MANAGERS_KEY);
+  const isLoading = !expenseManagers && !error;
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
       <div className={styles.container}>
@@ -93,7 +74,7 @@ export const ExpenseManagerView: FC = ({}) => {
                     <Loader />
                   </div>
                 )}
-                {connected && !isLoading && (
+                {connected && expenseManagers && (
                   <div className="flex flex-col">
                     <div className="w-full flex justify-end">
                       <SearchIcon className="h-6 w-6 relative left-8 top-3" />
@@ -106,7 +87,13 @@ export const ExpenseManagerView: FC = ({}) => {
                       />
                     </div>
                     <ExpenseManagerList
-                      expenseManagers={filteredExpenseManagers}
+                      expenseManagers={expenseManagers?.filter(
+                        (expenseManager) =>
+                          !query ||
+                          expenseManager.account.name
+                            .toLowerCase()
+                            .includes(query.toLowerCase())
+                      )}
                     />
                   </div>
                 )}
@@ -119,7 +106,7 @@ export const ExpenseManagerView: FC = ({}) => {
                     close={(success) => {
                       setOpen(false);
                       if (success) {
-                        fetchExpenseManagers();
+                        mutate(EXPENSE_MANAGERS_KEY);
                       }
                     }}
                   />
