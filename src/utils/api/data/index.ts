@@ -7,5 +7,10 @@ export {
   fetchAccessProposals,
   fetchWithdrawalProposals,
 } from "./proposals";
-export { REALMS_KEY, fetchRealms } from "./realms";
+export {
+  REALMS_KEY,
+  fetchRealms,
+  TREASURIES_KEY,
+  fetchTreasuries,
+} from "./realms";
 export { SQUADS_KEY, fetchSquads } from "./squads";

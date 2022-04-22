@@ -12,9 +12,11 @@ import {
   fetchExpensePackages,
   fetchRealms,
   fetchSquads,
+  fetchTreasuries,
   fetchWithdrawalProposals,
   REALMS_KEY,
   SQUADS_KEY,
+  TREASURIES_KEY,
   WITHDRAWAL_PROPOSALS_KEY,
 } from "./data";
 
@@ -34,6 +36,7 @@ export const SPL_GOV_SCHEMA: Record<
   (connection: Connection, programId: PublicKey, ...args: any[]) => Promise<any>
 > = {
   [REALMS_KEY]: fetchRealms,
+  [TREASURIES_KEY]: fetchTreasuries,
 };
 
 export const SQUADS_SCHEMA: Record<

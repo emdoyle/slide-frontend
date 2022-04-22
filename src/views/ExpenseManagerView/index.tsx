@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import { useSWRConfig } from "swr";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
@@ -11,17 +11,11 @@ import { ExpenseManagerItem, RealmItem, TreasuryWithGovernance } from "types";
 import {
   getMemberEquityAddressAndBump,
   getSquadMintAddressAndBump,
-  getSquads,
   SquadItem,
   SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import {
-  getAllGovernances,
-  getNativeTreasuryAddress,
-  getRealms,
-  getTokenOwnerRecordAddress,
-} from "@solana/spl-governance";
+import { TransactionInstruction } from "@solana/web3.js";
+import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
 import { address, constants, utils } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
 import { useAlert } from "react-alert";
@@ -30,9 +24,17 @@ import { RealmsCombobox } from "./RealmsCombobox";
 import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
-import base58 from "bs58";
-import { EXPENSE_MANAGERS_KEY } from "../../utils/api";
+import {
+  EXPENSE_MANAGERS_KEY,
+  REALMS_KEY,
+  SPLGovFetcher,
+  SQUADS_KEY,
+  SquadsFetcher,
+} from "../../utils/api";
 import { useSlideSWRImmutable } from "../../utils/api/fetchers";
+import useSWRImmutable from "swr/immutable";
+import { TREASURIES_KEY } from "../../utils/api/data";
+import { useErrorAlert } from "../../utils/useErrorAlert";
 
 export const ExpenseManagerView: FC = ({}) => {
   const { connected } = useWallet();
@@ -45,6 +47,7 @@ export const ExpenseManagerView: FC = ({}) => {
     error,
     isValidating, // TODO: subtle spinner on the side of the screen
   } = useSlideSWRImmutable<ExpenseManagerItem[]>(program, EXPENSE_MANAGERS_KEY);
+  useErrorAlert(error);
   const isLoading = !expenseManagers && !error;
   return (
     <div className="container mx-auto max-w-6xl p-8 2xl:px-0">
@@ -149,117 +152,45 @@ const CreateExpenseManagerModal = ({
   const { publicKey: userPublicKey } = useWallet();
   const { connection } = useConnection();
   const { program } = useSlideProgram();
+  // not sure if there is any spot to manually invalidate the cache
+  const { mutate } = useSWRConfig();
   const [name, setName] = useState<string>("");
   const [usingSPL, setUsingSPL] = useState<boolean>(true);
   const [realm, setRealm] = useState<RealmItem | null>(null);
   const [treasury, setTreasury] = useState<TreasuryWithGovernance | null>(null);
   const [squad, setSquad] = useState<SquadItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [allSquads, setAllSquads] = useState<SquadItem[]>([]);
-  const [squadsLoading, setSquadsLoading] = useState<boolean>(false);
-  const [allRealms, setAllRealms] = useState<RealmItem[]>([]);
-  const [realmsLoading, setRealmsLoading] = useState<boolean>(false);
-  const [allTreasuries, setAllTreasuries] = useState<TreasuryWithGovernance[]>(
-    []
+
+  const {
+    data: squads,
+    error: squadsError,
+    isValidating: squadsValidating,
+  } = useSWRImmutable<SquadItem[]>(
+    () => (!usingSPL ? [connection, SQUADS_PROGRAM_ID, SQUADS_KEY] : null),
+    SquadsFetcher
   );
-  const [treasuriesLoading, setTreasuriesLoading] = useState<boolean>(false);
-
-  const fetchSquads = async () => {
-    setSquadsLoading(true);
-    try {
-      setAllSquads(
-        await getSquads(SQUADS_PROGRAM_ID, connection, {
-          filters: [{ memcmp: { offset: 3, bytes: base58.encode([1]) } }],
-        })
-      );
-    } catch (err) {
-      if (err instanceof Error) {
-        Alert.error(err.message);
-      } else {
-        Alert.error("An unknown error occurred when fetching Squads.");
-      }
-    } finally {
-      setSquadsLoading(false);
-    }
-  };
-
-  const fetchRealms = async () => {
-    setRealmsLoading(true);
-    try {
-      setAllRealms(await getRealms(connection, SPL_GOV_PROGRAM_ID));
-    } catch (err) {
-      if (err instanceof Error) {
-        Alert.error(err.message);
-      } else {
-        Alert.error("An unknown error occurred when fetching Squads.");
-      }
-    } finally {
-      setRealmsLoading(false);
-    }
-  };
-
-  const fetchTreasuries = async (realmPubkey: PublicKey) => {
-    setTreasuriesLoading(true);
-    try {
-      // TODO:
-      //   backend Program assumes that the governance is a 'token' governance
-      //   because this is what the Realms UI creates when creating a native
-      //   treasury. but it is possible to create other types of governances
-      //   which also have a native treasury attached
-      const governances = await getAllGovernances(
-        connection,
-        SPL_GOV_PROGRAM_ID,
-        realmPubkey
-      );
-      const treasuryPubkeys: PublicKey[] = [];
-      for (let i = 0; i < governances.length; i++) {
-        treasuryPubkeys.push(
-          await getNativeTreasuryAddress(
-            SPL_GOV_PROGRAM_ID,
-            governances[i].pubkey
-          )
-        );
-      }
-      setAllTreasuries(
-        (await connection.getMultipleAccountsInfo(treasuryPubkeys)).flatMap(
-          (account, idx) =>
-            account
-              ? [
-                  {
-                    account: account,
-                    pubkey: treasuryPubkeys[idx],
-                    governance: governances[idx],
-                  },
-                ]
-              : []
-        )
-      );
-    } catch (err) {
-      if (err instanceof Error) {
-        Alert.error(err.message);
-      } else {
-        Alert.error("An unknown error occurred when fetching Treasuries.");
-      }
-    } finally {
-      setTreasuriesLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!usingSPL) {
-      fetchSquads();
-      setRealm(null);
-    } else {
-      fetchRealms();
-      setSquad(null);
-    }
-  }, [usingSPL]);
-
-  useEffect(() => {
-    if (realm) {
-      fetchTreasuries(realm.pubkey);
-    }
-  }, [realm?.pubkey.toString()]);
+  useErrorAlert(squadsError);
+  const {
+    data: realms,
+    error: realmsError,
+    isValidating: realmsValidating,
+  } = useSWRImmutable<RealmItem[]>(
+    () => (usingSPL ? [connection, SPL_GOV_PROGRAM_ID, REALMS_KEY] : null),
+    SPLGovFetcher
+  );
+  useErrorAlert(realmsError);
+  const {
+    data: treasuries,
+    error: treasuriesError,
+    isValidating: treasuriesValidating,
+  } = useSWRImmutable<TreasuryWithGovernance[]>(
+    () =>
+      usingSPL && realm
+        ? [connection, SPL_GOV_PROGRAM_ID, TREASURIES_KEY, realm.pubkey]
+        : null,
+    SPLGovFetcher
+  );
+  useErrorAlert(treasuriesError);
 
   const submitForm = async () => {
     if (!program || !userPublicKey) {
@@ -391,12 +322,12 @@ const CreateExpenseManagerModal = ({
             <>
               <RealmsCombobox
                 disabled={isSubmitting}
-                realms={allRealms}
+                realms={realms ?? []}
                 selectedRealm={realm}
                 setSelectedRealm={setRealm}
               />
               <TreasuryCombobox
-                treasuries={allTreasuries}
+                treasuries={treasuries ?? []}
                 selectedTreasury={treasury}
                 setSelectedTreasury={setTreasury}
                 disabled={isSubmitting || !realm}
@@ -406,7 +337,7 @@ const CreateExpenseManagerModal = ({
           {!usingSPL && (
             <SquadsCombobox
               disabled={isSubmitting}
-              squads={allSquads}
+              squads={squads ?? []}
               selectedSquad={squad}
               setSelectedSquad={setSquad}
             />
