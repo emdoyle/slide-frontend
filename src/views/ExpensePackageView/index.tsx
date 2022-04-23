@@ -41,9 +41,11 @@ export const ExpensePackageView: FC = ({}) => {
     data: expenseManager,
     error: expenseManagerError,
     isValidating: expenseManagerValidating,
-  } = useSlideSWRImmutable<ExpenseManagerItem>(program, EXPENSE_MANAGER_KEY, [
-    expenseManagerPubkey,
-  ]);
+  } = useSlideSWRImmutable<ExpenseManagerItem>(
+    program,
+    EXPENSE_MANAGER_KEY,
+    () => (expenseManagerPubkey ? [expenseManagerPubkey] : null)
+  );
   useErrorAlert(expenseManagerError);
   const isLoading = connected && !expenseManager && !expenseManagerError;
 
@@ -52,7 +54,10 @@ export const ExpensePackageView: FC = ({}) => {
     useSlideSWRImmutable<AccessRecordItem>(
       program,
       ACCESS_RECORD_KEY,
-      [expenseManagerPubkey, userPublicKey],
+      () =>
+        expenseManagerPubkey && userPublicKey
+          ? [expenseManagerPubkey, userPublicKey]
+          : null,
       { shouldRetryOnError: false }
     );
 

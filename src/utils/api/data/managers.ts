@@ -30,11 +30,8 @@ export const EXPENSE_MANAGER_KEY = "expense-manager";
 
 export const fetchExpenseManager = async (
   program: Program<Slide>,
-  expenseManager: PublicKey | undefined
-): Promise<ExpenseManagerItem | null> => {
-  if (!expenseManager) {
-    return null;
-  }
+  expenseManager: PublicKey
+): Promise<ExpenseManagerItem> => {
   const managerAccount = await program.account.expenseManager.fetch(
     expenseManager
   );

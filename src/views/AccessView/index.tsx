@@ -1,70 +1,63 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import { Loader } from "components";
-
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
-import { AccessRecordItem, ExpenseManager, ExpenseManagerItem } from "types";
+import { AccessRecordItem, ExpenseManagerItem } from "types";
 import { AccessRecordCard } from "./AccessRecordCard";
 import { useRouter } from "next/router";
 import { PublicKey } from "@solana/web3.js";
-import { useAlert } from "react-alert";
 import { PendingAccessProposal } from "./PendingAccessProposal";
 import { CreateAccessProposalModal } from "./CreateAccessProposalModal";
 import { isAccessRequest } from "utils/proposals";
 import { useProposals } from "../../utils/api/useProposals";
+import { useSlideSWRImmutable } from "../../utils/api/fetchers";
+import { ACCESS_RECORDS_KEY, EXPENSE_MANAGER_KEY } from "../../utils/api";
+import { useErrorAlert } from "../../utils/useErrorAlert";
+import { useSWRConfig } from "swr";
 
 export const AccessView: FC = ({}) => {
-  const Alert = useAlert();
   const router = useRouter();
   const query = router.query;
   const { connected } = useWallet();
   const { program } = useSlideProgram();
   const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [expenseManager, setExpenseManager] =
-    useState<ExpenseManagerItem | null>(null);
-  const [accessRecords, setAccessRecords] = useState<any>([]);
+  const [expenseManagerPubkey, setExpenseManagerPubkey] =
+    useState<PublicKey | null>(null);
 
-  async function fetchExpenseManager() {
-    if (program && query?.pubkey) {
-      setIsLoading(true);
-      try {
-        const expenseManagerPubkey = new PublicKey(query.pubkey);
-        const expenseManagerAccount: ExpenseManager =
-          await program.account.expenseManager.fetch(expenseManagerPubkey);
-        setExpenseManager({
-          account: expenseManagerAccount,
-          publicKey: expenseManagerPubkey,
-        });
-      } catch (err) {
-        if (err instanceof Error) {
-          Alert.error(err.message);
-        } else {
-          Alert.error("An unknown error occurred");
-        }
-      } finally {
-        setIsLoading(false);
-      }
+  if (!expenseManagerPubkey && query?.pubkey) {
+    try {
+      setExpenseManagerPubkey(new PublicKey(query.pubkey));
+    } catch {
+      // TODO: set an error message that shows up as a banner or blocking modal
     }
   }
 
-  async function fetchAccessRecords() {
-    if (program && expenseManager) {
-      const managerFilter = {
-        memcmp: { offset: 41, bytes: expenseManager.publicKey.toBase58() },
-      };
-      setAccessRecords(await program.account.accessRecord.all([managerFilter]));
-    }
-  }
+  const {
+    data: expenseManager,
+    error: expenseManagerError,
+    isValidating: expenseManagerValidating,
+  } = useSlideSWRImmutable<ExpenseManagerItem>(
+    program,
+    EXPENSE_MANAGER_KEY,
+    () => (expenseManagerPubkey ? [expenseManagerPubkey] : null)
+  );
+  useErrorAlert(expenseManagerError);
+  const expenseManagerLoading = !expenseManager && !expenseManagerError;
 
-  useEffect(() => {
-    fetchAccessRecords();
-  }, [program?.programId, expenseManager?.publicKey.toString()]);
+  const {
+    data: accessRecords,
+    error: accessRecordsError,
+    isValidating: accessRecordsValidating,
+  } = useSlideSWRImmutable<AccessRecordItem[]>(
+    program,
+    ACCESS_RECORDS_KEY,
+    () => (program && expenseManager ? [expenseManager.publicKey] : null)
+  );
+  const accessRecordsLoading = !accessRecords && !accessRecordsError;
 
-  useEffect(() => {
-    fetchExpenseManager();
-  }, [program?.programId, query?.pubkey]);
+  const isLoading =
+    connected && (expenseManagerLoading || accessRecordsLoading);
 
   return (
     <div className="text-center pt-2">
@@ -99,10 +92,9 @@ export const AccessView: FC = ({}) => {
                     expenseManager={expenseManager}
                     modalOpen={modalOpen}
                     setModalOpen={setModalOpen}
-                    refetchAccessRecords={fetchAccessRecords}
                   />
                 )}
-                {!!accessRecords.length && (
+                {!!accessRecords?.length && (
                   <AccessRecordList accessRecords={accessRecords} />
                 )}
               </>
@@ -124,13 +116,12 @@ const ProposalContent = ({
   expenseManager,
   modalOpen,
   setModalOpen,
-  refetchAccessRecords,
 }: {
   expenseManager: ExpenseManagerItem;
   modalOpen: boolean;
   setModalOpen: (open: boolean) => void;
-  refetchAccessRecords: () => void;
 }) => {
+  const { mutate } = useSWRConfig();
   const { connection } = useConnection();
   const { program } = useSlideProgram();
   const { proposals, isLoading, mutateProposals } = useProposals(
@@ -159,7 +150,7 @@ const ProposalContent = ({
                 proposal={proposal}
                 expenseManager={expenseManager}
                 refetchAccessRecords={() => {
-                  refetchAccessRecords();
+                  mutate([ACCESS_RECORDS_KEY, expenseManager.publicKey]);
                   mutateProposals();
                 }}
               />
