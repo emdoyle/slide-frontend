@@ -9,6 +9,10 @@ import {
   createSPLWithdrawalProposal,
   createSquadsWithdrawalProposal,
 } from "./actions";
+import { useSWRConfig } from "swr";
+import { SQUADS_PROGRAM_ID } from "@slidexyz/squads-sdk";
+import { SPL_GOV_PROPOSALS_KEY, SQUADS_PROPOSALS_KEY } from "../../utils/api";
+import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 
 export const CreateWithdrawProposalModal = ({
   open,
@@ -17,13 +21,14 @@ export const CreateWithdrawProposalModal = ({
   managerBalance,
 }: {
   open: boolean;
-  close: (success?: boolean) => void;
+  close: () => void;
   expenseManager: ExpenseManagerItem;
   managerBalance: number;
 }) => {
   const Alert = useAlert();
   const { connection } = useConnection();
   const { publicKey: userPublicKey } = useWallet();
+  const { mutate } = useSWRConfig();
   const { program } = useSlideProgram();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
@@ -101,12 +106,32 @@ export const CreateWithdrawProposalModal = ({
                   .then((alertText?) => {
                     setIsSubmitting(false);
                     Alert.show(alertText ?? "Success");
-                    close(true);
+                    if (expenseManager.account.squad) {
+                      mutate([
+                        [
+                          connection,
+                          SQUADS_PROGRAM_ID,
+                          SQUADS_PROPOSALS_KEY,
+                          program?.programId,
+                          expenseManager.publicKey,
+                          expenseManager.account.squad,
+                        ],
+                      ]);
+                    } else {
+                      mutate([
+                        connection,
+                        SPL_GOV_PROGRAM_ID,
+                        SPL_GOV_PROPOSALS_KEY,
+                        expenseManager.publicKey,
+                        expenseManager.account.realm,
+                      ]);
+                    }
+                    close();
                   })
                   .catch((err: Error) => {
                     setIsSubmitting(false);
                     Alert.error(err.message);
-                    close(false);
+                    close();
                   });
               }}
             >

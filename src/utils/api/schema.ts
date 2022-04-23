@@ -2,26 +2,26 @@ import { Slide } from "@slidexyz/slide-sdk";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { Program } from "@project-serum/anchor";
 import {
-  ACCESS_PROPOSALS_KEY,
   ACCESS_RECORD_KEY,
   ACCESS_RECORDS_KEY,
   EXPENSE_MANAGER_KEY,
   EXPENSE_MANAGERS_KEY,
   EXPENSE_PACKAGES_KEY,
-  fetchAccessProposals,
   fetchAccessRecord,
   fetchAccessRecords,
   fetchExpenseManager,
   fetchExpenseManagers,
   fetchExpensePackages,
   fetchRealms,
+  fetchSPLGovProposals,
   fetchSquads,
+  fetchSquadsProposals,
   fetchTreasuries,
-  fetchWithdrawalProposals,
   REALMS_KEY,
+  SPL_GOV_PROPOSALS_KEY,
   SQUADS_KEY,
+  SQUADS_PROPOSALS_KEY,
   TREASURIES_KEY,
-  WITHDRAWAL_PROPOSALS_KEY,
 } from "./data";
 
 export const SLIDE_SCHEMA: Record<
@@ -33,8 +33,6 @@ export const SLIDE_SCHEMA: Record<
   [EXPENSE_MANAGER_KEY]: fetchExpenseManager,
   [EXPENSE_MANAGERS_KEY]: fetchExpenseManagers,
   [EXPENSE_PACKAGES_KEY]: fetchExpensePackages,
-  [ACCESS_PROPOSALS_KEY]: fetchAccessProposals,
-  [WITHDRAWAL_PROPOSALS_KEY]: fetchWithdrawalProposals,
 };
 
 export const SPL_GOV_SCHEMA: Record<
@@ -43,6 +41,7 @@ export const SPL_GOV_SCHEMA: Record<
 > = {
   [REALMS_KEY]: fetchRealms,
   [TREASURIES_KEY]: fetchTreasuries,
+  [SPL_GOV_PROPOSALS_KEY]: fetchSPLGovProposals,
 };
 
 export const SQUADS_SCHEMA: Record<
@@ -50,4 +49,5 @@ export const SQUADS_SCHEMA: Record<
   (connection: Connection, programId: PublicKey, ...args: any[]) => Promise<any>
 > = {
   [SQUADS_KEY]: fetchSquads,
+  [SQUADS_PROPOSALS_KEY]: fetchSquadsProposals,
 };

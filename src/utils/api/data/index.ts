@@ -12,10 +12,10 @@ export {
 } from "./managers";
 export { EXPENSE_PACKAGES_KEY, fetchExpensePackages } from "./packages";
 export {
-  ACCESS_PROPOSALS_KEY,
-  WITHDRAWAL_PROPOSALS_KEY,
-  fetchAccessProposals,
-  fetchWithdrawalProposals,
+  SPL_GOV_PROPOSALS_KEY,
+  SQUADS_PROPOSALS_KEY,
+  fetchSPLGovProposals,
+  fetchSquadsProposals,
 } from "./proposals";
 export {
   REALMS_KEY,

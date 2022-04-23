@@ -25,15 +25,16 @@ import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
 import {
+  TREASURIES_KEY,
   EXPENSE_MANAGERS_KEY,
   REALMS_KEY,
-  SPLGovFetcher,
   SQUADS_KEY,
-  SquadsFetcher,
 } from "../../utils/api";
-import { useSlideSWRImmutable } from "../../utils/api/fetchers";
-import useSWRImmutable from "swr/immutable";
-import { TREASURIES_KEY } from "../../utils/api/data";
+import {
+  useSlideSWRImmutable,
+  useSPLGovSWRImmutable,
+  useSquadsSWRImmutable,
+} from "../../utils/api/fetchers";
 import { useErrorAlert } from "../../utils/useErrorAlert";
 
 export const ExpenseManagerView: FC = ({}) => {
@@ -152,8 +153,6 @@ const CreateExpenseManagerModal = ({
   const { publicKey: userPublicKey } = useWallet();
   const { connection } = useConnection();
   const { program } = useSlideProgram();
-  // not sure if there is any spot to manually invalidate the cache
-  const { mutate } = useSWRConfig();
   const [name, setName] = useState<string>("");
   const [usingSPL, setUsingSPL] = useState<boolean>(true);
   const [realm, setRealm] = useState<RealmItem | null>(null);
@@ -165,30 +164,33 @@ const CreateExpenseManagerModal = ({
     data: squads,
     error: squadsError,
     isValidating: squadsValidating,
-  } = useSWRImmutable<SquadItem[]>(
-    () => (!usingSPL ? [connection, SQUADS_PROGRAM_ID, SQUADS_KEY] : null),
-    SquadsFetcher
+  } = useSquadsSWRImmutable<SquadItem[]>(
+    connection,
+    SQUADS_PROGRAM_ID,
+    SQUADS_KEY,
+    () => (!usingSPL ? [] : null)
   );
   useErrorAlert(squadsError);
   const {
     data: realms,
     error: realmsError,
     isValidating: realmsValidating,
-  } = useSWRImmutable<RealmItem[]>(
-    () => (usingSPL ? [connection, SPL_GOV_PROGRAM_ID, REALMS_KEY] : null),
-    SPLGovFetcher
+  } = useSPLGovSWRImmutable<RealmItem[]>(
+    connection,
+    SPL_GOV_PROGRAM_ID,
+    REALMS_KEY,
+    () => (usingSPL ? [] : null)
   );
   useErrorAlert(realmsError);
   const {
     data: treasuries,
     error: treasuriesError,
     isValidating: treasuriesValidating,
-  } = useSWRImmutable<TreasuryWithGovernance[]>(
-    () =>
-      usingSPL && realm
-        ? [connection, SPL_GOV_PROGRAM_ID, TREASURIES_KEY, realm.pubkey]
-        : null,
-    SPLGovFetcher
+  } = useSPLGovSWRImmutable<TreasuryWithGovernance[]>(
+    connection,
+    SPL_GOV_PROGRAM_ID,
+    TREASURIES_KEY,
+    () => (usingSPL && realm ? [realm.pubkey] : null)
   );
   useErrorAlert(treasuriesError);
 

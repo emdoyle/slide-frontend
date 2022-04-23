@@ -18,7 +18,7 @@ import {
   ACCESS_RECORD_KEY,
   EXPENSE_MANAGER_KEY,
   EXPENSE_PACKAGES_KEY,
-} from "../../utils/api/data";
+} from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
 
 export const ExpensePackageView: FC = ({}) => {

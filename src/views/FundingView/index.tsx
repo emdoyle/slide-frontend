@@ -1,137 +1,96 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Loader, PromptConnectWallet } from "components";
 
 import { PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { useRouter } from "next/router";
-import { ExpenseManager, ExpenseManagerItem, ProposalInfo } from "types";
+import { ExpenseManagerItem, ProposalInfo } from "types";
 import { useBalance } from "utils/useBalance";
 import { CreateWithdrawProposalModal } from "./CreateWithdrawProposalModal";
 import { Withdrawals } from "./Withdrawals";
-import { getProposals, SQUADS_PROGRAM_ID } from "@slidexyz/squads-sdk";
-import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
-import { useAlert } from "react-alert";
-import { SPLProposalToInfo, squadsProposalToInfo } from "../../utils/proposals";
-import { getAllProposals } from "@solana/spl-governance";
+import { SQUADS_PROGRAM_ID } from "@slidexyz/squads-sdk";
 import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
+import {
+  useSlideSWRImmutable,
+  useSPLGovSWRImmutable,
+  useSquadsSWRImmutable,
+} from "../../utils/api/fetchers";
+import {
+  EXPENSE_MANAGER_KEY,
+  SPL_GOV_PROPOSALS_KEY,
+  SQUADS_PROPOSALS_KEY,
+} from "../../utils/api";
+import { useErrorAlert } from "../../utils/useErrorAlert";
 
 export const FundingView: FC = ({}) => {
-  const Alert = useAlert();
   const { connection } = useConnection();
-  const { connected, publicKey: userPublicKey } = useWallet();
+  const { connected } = useWallet();
   const { program } = useSlideProgram();
   const { query } = useRouter();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [expenseManager, setExpenseManager] =
-    useState<ExpenseManagerItem | null>(null);
-  const [proposals, setProposals] = useState<ProposalInfo[]>([]);
-  const [proposalsLoading, setProposalsLoading] = useState<boolean>(false);
 
-  async function fetchExpenseManager() {
-    if (program && userPublicKey && query?.pubkey) {
-      const expenseManagerPubkey = new PublicKey(query.pubkey);
-      const expenseManagerAccount: ExpenseManager =
-        await program.account.expenseManager.fetch(expenseManagerPubkey);
-      setExpenseManager({
-        account: expenseManagerAccount,
-        publicKey: expenseManagerPubkey,
-      });
+  const [expenseManagerPubkey, setExpenseManagerPubkey] =
+    useState<PublicKey | null>(null);
+
+  if (!expenseManagerPubkey && query?.pubkey) {
+    try {
+      setExpenseManagerPubkey(new PublicKey(query.pubkey));
+    } catch {
+      // TODO: set an error message that shows up as a banner or blocking modal
     }
   }
 
-  async function fetchProposals() {
-    if (program && expenseManager) {
-      setProposalsLoading(true);
-      try {
-        if (expenseManager.account.squad) {
-          // Fetch Squads proposals, map into ProposalInfo
-          const proposalItems = await getProposals(
-            SQUADS_PROGRAM_ID,
-            connection,
-            expenseManager.account.squad
-          );
-          const proposalExecutions = proposalItems.map(
-            (proposal) =>
-              getProposalExecutionAddressAndBump(
-                program.programId,
-                expenseManager.publicKey,
-                proposal.pubkey
-              )[0]
-          );
-          const executionAccountInfos =
-            await connection.getMultipleAccountsInfo(proposalExecutions);
-          const proposalInfos: ProposalInfo[] = proposalItems.map(
-            (proposal, idx) =>
-              squadsProposalToInfo(
-                proposal,
-                executionAccountInfos[idx] !== null
-              )
-          );
-          setProposals(proposalInfos);
-        } else if (
-          expenseManager.account.realm &&
-          expenseManager.account.governanceAuthority
-        ) {
-          // Fetch SPL Gov proposals, map into ProposalInfo
-          const proposalItems = await getAllProposals(
-            connection,
-            SPL_GOV_PROGRAM_ID,
-            expenseManager.account.realm
-          );
-          // TODO: flattening here is required because we pulled all proposals
-          //   regardless of which governance they were created under
-          //   otherwise could restrict it to just the governance attached to
-          //   the native treasury, but seems unnecessary
-          const proposalInfos: ProposalInfo[] = proposalItems
-            .flat()
-            .map(SPLProposalToInfo);
-          setProposals(proposalInfos);
-        }
-      } catch (err) {
-        if (err instanceof Error) {
-          Alert.error(err.message);
-        } else {
-          Alert.error("An unknown error occurred");
-        }
-      } finally {
-        setProposalsLoading(false);
-      }
-    }
-  }
+  const {
+    data: expenseManager,
+    error: expenseManagerError,
+    isValidating: expenseManagerValidating,
+  } = useSlideSWRImmutable<ExpenseManagerItem>(program, EXPENSE_MANAGER_KEY, [
+    expenseManagerPubkey,
+  ]);
+  useErrorAlert(expenseManagerError);
+  const isLoading = connected && !expenseManager && !expenseManagerError;
 
-  async function refetchExecutionStatus() {
-    if (program && expenseManager && expenseManager.account.squad) {
-      const proposalExecutions = proposals.map(
-        (proposal) =>
-          getProposalExecutionAddressAndBump(
+  const {
+    data: squadsProposals,
+    error: squadsProposalsError,
+    isValidating: squadsProposalsValidating,
+  } = useSquadsSWRImmutable<ProposalInfo[]>(
+    connection,
+    SQUADS_PROGRAM_ID,
+    SQUADS_PROPOSALS_KEY,
+    () =>
+      program && expenseManager?.account.squad
+        ? [
             program.programId,
-            expenseManager.publicKey,
-            proposal.pubkey
-          )[0]
-      );
-      const executionAccountInfos = await connection.getMultipleAccountsInfo(
-        proposalExecutions
-      );
-      const proposalsWithExecution: ProposalInfo[] = proposals.map(
-        (proposal, idx) => ({
-          ...proposal,
-          executed: executionAccountInfos[idx] !== null,
-        })
-      );
-      setProposals(proposalsWithExecution);
-    }
-  }
+            expenseManagerPubkey,
+            expenseManager.account.squad,
+          ]
+        : null
+  );
+  useErrorAlert(squadsProposalsError);
+  const squadsProposalsLoading =
+    expenseManager?.account.squad && !squadsProposals && !squadsProposalsError;
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetchExpenseManager().finally(() => setIsLoading(false));
-  }, [program?.programId, query?.pubkey]);
+  const {
+    data: splGovProposals,
+    error: splGovProposalsError,
+    isValidating: splGovProposalsValidating,
+  } = useSPLGovSWRImmutable<ProposalInfo[]>(
+    connection,
+    SPL_GOV_PROGRAM_ID,
+    SPL_GOV_PROPOSALS_KEY,
+    () =>
+      expenseManager?.account.realm
+        ? [expenseManagerPubkey, expenseManager.account.realm]
+        : null
+  );
+  useErrorAlert(splGovProposalsError);
+  const splGovProposalsLoading =
+    expenseManager?.account.squad && !squadsProposals && !squadsProposalsError;
 
-  useEffect(() => {
-    fetchProposals();
-  }, [expenseManager?.publicKey.toString()]);
+  const proposalsLoading =
+    connected && (squadsProposalsLoading || splGovProposalsLoading);
 
   const { balance: managerBalance } = useBalance(
     expenseManager?.publicKey ?? null
@@ -166,7 +125,7 @@ export const FundingView: FC = ({}) => {
                 <Loader />
               </div>
             )}
-            {connected && !isLoading && expenseManager && (
+            {connected && expenseManager && (
               <>
                 <div className="flex flex-col gap-2 justify-center mt-5">
                   <p className="text-xl mb-5">
@@ -204,25 +163,20 @@ export const FundingView: FC = ({}) => {
                 ) : (
                   <Withdrawals
                     expenseManager={expenseManager}
-                    proposals={proposals}
-                    refetchExecutionStatus={refetchExecutionStatus}
+                    proposals={
+                      expenseManager.account.squad
+                        ? squadsProposals ?? []
+                        : splGovProposals ?? []
+                    }
                   />
                 )}
+                <CreateWithdrawProposalModal
+                  open={modalOpen}
+                  close={() => setModalOpen(false)}
+                  expenseManager={expenseManager}
+                  managerBalance={managerBalance ?? 0}
+                />
               </>
-            )}
-
-            {connected && expenseManager && managerBalance !== null && (
-              <CreateWithdrawProposalModal
-                open={modalOpen}
-                close={(success) => {
-                  setModalOpen(false);
-                  if (success) {
-                    fetchProposals();
-                  }
-                }}
-                expenseManager={expenseManager}
-                managerBalance={managerBalance}
-              />
             )}
             {!connected && <PromptConnectWallet />}
           </div>
