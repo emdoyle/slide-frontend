@@ -5,23 +5,14 @@ import { Loader, PromptConnectWallet } from "components";
 import { PublicKey } from "@solana/web3.js";
 import { useSlideProgram } from "utils/useSlide";
 import { useRouter } from "next/router";
-import { ExpenseManagerItem, ProposalInfo } from "types";
+import { ExpenseManagerItem } from "types";
 import { useBalance } from "utils/useBalance";
 import { CreateWithdrawProposalModal } from "./CreateWithdrawProposalModal";
 import { Withdrawals } from "./Withdrawals";
-import { SQUADS_PROGRAM_ID } from "@slidexyz/squads-sdk";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
-import {
-  useSlideSWRImmutable,
-  useSPLGovSWRImmutable,
-  useSquadsSWRImmutable,
-} from "../../utils/api/fetchers";
-import {
-  EXPENSE_MANAGER_KEY,
-  SPL_GOV_PROPOSALS_KEY,
-  SQUADS_PROPOSALS_KEY,
-} from "../../utils/api";
+import { useSlideSWRImmutable } from "../../utils/api/fetchers";
+import { EXPENSE_MANAGER_KEY } from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
+import { useProposals } from "../../utils/api/useProposals";
 
 export const FundingView: FC = ({}) => {
   const { connection } = useConnection();
@@ -52,45 +43,10 @@ export const FundingView: FC = ({}) => {
   const isLoading = connected && !expenseManager && !expenseManagerError;
 
   const {
-    data: squadsProposals,
-    error: squadsProposalsError,
-    isValidating: squadsProposalsValidating,
-  } = useSquadsSWRImmutable<ProposalInfo[]>(
-    connection,
-    SQUADS_PROGRAM_ID,
-    SQUADS_PROPOSALS_KEY,
-    () =>
-      program && expenseManager?.account.squad
-        ? [
-            program.programId,
-            expenseManagerPubkey,
-            expenseManager.account.squad,
-          ]
-        : null
-  );
-  useErrorAlert(squadsProposalsError);
-  const squadsProposalsLoading =
-    expenseManager?.account.squad && !squadsProposals && !squadsProposalsError;
-
-  const {
-    data: splGovProposals,
-    error: splGovProposalsError,
-    isValidating: splGovProposalsValidating,
-  } = useSPLGovSWRImmutable<ProposalInfo[]>(
-    connection,
-    SPL_GOV_PROGRAM_ID,
-    SPL_GOV_PROPOSALS_KEY,
-    () =>
-      expenseManager?.account.realm
-        ? [expenseManagerPubkey, expenseManager.account.realm]
-        : null
-  );
-  useErrorAlert(splGovProposalsError);
-  const splGovProposalsLoading =
-    expenseManager?.account.squad && !squadsProposals && !squadsProposalsError;
-
-  const proposalsLoading =
-    connected && (squadsProposalsLoading || splGovProposalsLoading);
+    proposals,
+    isLoading: proposalsLoading,
+    mutateProposals,
+  } = useProposals(program, connection, expenseManager);
 
   const { balance: managerBalance } = useBalance(
     expenseManager?.publicKey ?? null
@@ -163,16 +119,17 @@ export const FundingView: FC = ({}) => {
                 ) : (
                   <Withdrawals
                     expenseManager={expenseManager}
-                    proposals={
-                      expenseManager.account.squad
-                        ? squadsProposals ?? []
-                        : splGovProposals ?? []
-                    }
+                    proposals={proposals}
                   />
                 )}
                 <CreateWithdrawProposalModal
                   open={modalOpen}
-                  close={() => setModalOpen(false)}
+                  close={(success) => {
+                    setModalOpen(false);
+                    if (success) {
+                      mutateProposals();
+                    }
+                  }}
                   expenseManager={expenseManager}
                   managerBalance={managerBalance ?? 0}
                 />

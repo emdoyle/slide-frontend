@@ -4,27 +4,15 @@ import { Loader } from "components";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useSlideProgram } from "utils/useSlide";
 import { PromptConnectWallet } from "components/PromptConnectWallet";
-import {
-  AccessRecordItem,
-  ExpenseManager,
-  ExpenseManagerItem,
-  ProposalInfo,
-} from "types";
+import { AccessRecordItem, ExpenseManager, ExpenseManagerItem } from "types";
 import { AccessRecordCard } from "./AccessRecordCard";
 import { useRouter } from "next/router";
 import { PublicKey } from "@solana/web3.js";
-import { SQUADS_PROGRAM_ID, getProposals } from "@slidexyz/squads-sdk";
 import { useAlert } from "react-alert";
 import { PendingAccessProposal } from "./PendingAccessProposal";
 import { CreateAccessProposalModal } from "./CreateAccessProposalModal";
-import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
-import {
-  isAccessRequest,
-  SPLProposalToInfo,
-  squadsProposalToInfo,
-} from "utils/proposals";
-import { getAllProposals } from "@solana/spl-governance";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
+import { isAccessRequest } from "utils/proposals";
+import { useProposals } from "../../utils/api/useProposals";
 
 export const AccessView: FC = ({}) => {
   const Alert = useAlert();
@@ -143,73 +131,13 @@ const ProposalContent = ({
   setModalOpen: (open: boolean) => void;
   refetchAccessRecords: () => void;
 }) => {
-  const Alert = useAlert();
   const { connection } = useConnection();
   const { program } = useSlideProgram();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [proposals, setProposals] = useState<ProposalInfo[]>([]);
-  async function fetchProposals() {
-    if (program) {
-      setIsLoading(true);
-      try {
-        if (expenseManager.account.squad) {
-          const proposalItems = await getProposals(
-            SQUADS_PROGRAM_ID,
-            connection,
-            expenseManager.account.squad
-          );
-          const proposalExecutions = proposalItems.map(
-            (proposal) =>
-              getProposalExecutionAddressAndBump(
-                program.programId,
-                expenseManager.publicKey,
-                proposal.pubkey
-              )[0]
-          );
-          const executionAccountInfos =
-            await connection.getMultipleAccountsInfo(proposalExecutions);
-          setProposals(
-            proposalItems.map((proposal, idx) =>
-              squadsProposalToInfo(
-                proposal,
-                executionAccountInfos[idx] !== null
-              )
-            )
-          );
-        } else if (
-          expenseManager.account.realm &&
-          expenseManager.account.governanceAuthority
-        ) {
-          // Fetch SPL Gov proposals, map into ProposalInfo
-          const proposalItems = await getAllProposals(
-            connection,
-            SPL_GOV_PROGRAM_ID,
-            expenseManager.account.realm
-          );
-          // TODO: flattening here is required because we pulled all proposals
-          //   regardless of which governance they were created under
-          //   otherwise could restrict it to just the governance attached to
-          //   the native treasury, but seems unnecessary
-          const proposalInfos: ProposalInfo[] = proposalItems
-            .flat()
-            .map(SPLProposalToInfo);
-          setProposals(proposalInfos);
-        }
-      } catch (err) {
-        if (err instanceof Error) {
-          Alert.error(err.message);
-        } else {
-          Alert.error("An unknown error occurred");
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  }
-  useEffect(() => {
-    fetchProposals();
-  }, [expenseManager.account.squad?.toString()]);
-
+  const { proposals, isLoading, mutateProposals } = useProposals(
+    program,
+    connection,
+    expenseManager
+  );
   const pendingAccessProposals = proposals.filter(
     (proposal) => isAccessRequest(proposal) && !proposal.executed
   );
@@ -232,7 +160,7 @@ const ProposalContent = ({
                 expenseManager={expenseManager}
                 refetchAccessRecords={() => {
                   refetchAccessRecords();
-                  fetchProposals();
+                  mutateProposals();
                 }}
               />
             ))}
@@ -244,7 +172,7 @@ const ProposalContent = ({
         close={(success) => {
           setModalOpen(false);
           if (success) {
-            fetchProposals();
+            mutateProposals();
           }
         }}
         expenseManager={expenseManager}
