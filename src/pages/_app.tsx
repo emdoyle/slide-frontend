@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { SWRConfig } from "swr";
 import type { AppProps } from "next/app";
 import dynamic from "next/dynamic";
@@ -10,15 +10,15 @@ import AlertTemplate from "react-alert-template-basic";
 import "tailwindcss/tailwind.css";
 import "../styles/globals.css";
 import "../styles/App.css";
-import { PublicKey } from "@solana/web3.js";
 import { serializePubkeysForCache } from "../utils/swrMiddleware";
+import { useRouter } from "next/router";
 
 // localnet
-// const endpoint = "http://127.0.0.1:8899";
+const LOCAL_CLUSTER = "http://127.0.0.1:8899";
 // devnet
-const endpoint = "https://api.devnet.solana.com";
+const DEVNET_CLUSTER = "https://api.devnet.solana.com";
 // mainnet
-// const endpoint = "https://ssc-dao.genesysgo.net";
+const MAINNET_CLUSTER = "https://ssc-dao.genesysgo.net";
 
 const WalletProvider = dynamic(
   () => import("../contexts/ClientWalletProvider"),
@@ -35,16 +35,25 @@ const AlertOptions = {
 };
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const { isReady } = useRouter();
+  const [clusterEndpoint, setClusterEndpoint] =
+    useState<string>(DEVNET_CLUSTER);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const subdomain = window.location.hostname.split(".")[0];
+      if (subdomain === "mainnet") {
+        setClusterEndpoint(MAINNET_CLUSTER);
+      } else if (subdomain === "localhost") {
+        setClusterEndpoint(LOCAL_CLUSTER);
+      }
+    }
+  }, [isReady]);
+
   return (
     <SWRConfig value={{ use: [serializePubkeysForCache] }}>
-      <ConnectionProvider endpoint={endpoint}>
+      <ConnectionProvider endpoint={clusterEndpoint}>
         <WalletProvider>
-          <SlideProgramProvider
-            programId={
-              // TODO: constant/configurable
-              new PublicKey("3nunqfARwEnmSGg5b9aDEWuBVQHHHhztRAXR4bM4CYCE")
-            }
-          >
+          <SlideProgramProvider>
             <AlertProvider template={AlertTemplate} {...AlertOptions}>
               <Component {...pageProps} />
             </AlertProvider>
