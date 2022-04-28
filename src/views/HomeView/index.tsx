@@ -27,7 +27,7 @@ export const HomeView: FC = ({}) => {
                 </p>
               </div>
               <div className="mb-4 flex w-full justify-center items-center">
-                <Link href="/managers">
+                <Link href="/managers" passHref>
                   <button className="btn text-white bg-gradient-to-tl from-blue-400 to-pink-500 via-violet-800 hover:scale-105 hover:shadow-md">
                     Get Started
                   </button>
@@ -78,23 +78,19 @@ export const HomeView: FC = ({}) => {
                   <div className="card-body">
                     <p className="text-xl lg:text-3xl text-left">
                       Slide is deeply integrated with DAO primitives from both{" "}
-                      <span
+                      <a
                         className="link hover:text-accent"
-                        onClick={() =>
-                          router.push(
-                            "https://realms.today/realms?cluster=devnet"
-                          )
-                        }
+                        href="https://realms.today/realms?cluster=devnet"
                       >
                         Realms
-                      </span>{" "}
+                      </a>{" "}
                       and{" "}
-                      <span
+                      <a
                         className="link hover:text-accent"
-                        onClick={() => router.push("https://app.squads.so/")}
+                        href="https://app.squads.so/"
                       >
                         Squads
-                      </span>
+                      </a>
                       .
                     </p>
                   </div>
