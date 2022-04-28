@@ -7,8 +7,8 @@ import { SPL_GOV_SHARED_PROGRAM_ID } from "../../constants";
 
 const ExpenseManagers: NextPage<{
   realmsProgramIds: Record<string, string[]>;
-  clusterEndpoint: string;
-}> = ({ realmsProgramIds, clusterEndpoint }) => {
+  cluster: string;
+}> = ({ realmsProgramIds, cluster }) => {
   return (
     <div>
       <Head>
@@ -17,8 +17,8 @@ const ExpenseManagers: NextPage<{
       </Head>
       <ExpenseManagerView
         realmsProgramIds={
-          realmsProgramIds[clusterEndpoint]
-            ? realmsProgramIds[clusterEndpoint].map((arr) => new PublicKey(arr))
+          realmsProgramIds[cluster]
+            ? realmsProgramIds[cluster].map((arr) => new PublicKey(arr))
             : [SPL_GOV_SHARED_PROGRAM_ID]
         }
       />
@@ -31,7 +31,7 @@ export default ExpenseManagers;
 export async function getStaticProps(context: NextPageContext) {
   const certifiedRealmsJSONEndpoints = [
     {
-      key: "mainnet",
+      key: "mainnet-beta",
       endpoint: "https://realms.today/realms/mainnet-beta.json",
     },
     { key: "devnet", endpoint: "https://realms.today/realms/devnet.json" },

@@ -17,8 +17,10 @@ import { useRouter } from "next/router";
 const LOCAL_CLUSTER = "http://127.0.0.1:8899";
 // devnet
 const DEVNET_CLUSTER = "https://api.devnet.solana.com";
+const DEVNET = "devnet";
 // mainnet
 const MAINNET_CLUSTER = "https://ssc-dao.genesysgo.net";
+const MAINNET = "mainnet-beta";
 
 const WalletProvider = dynamic(
   () => import("../contexts/ClientWalletProvider"),
@@ -38,11 +40,13 @@ function MyApp({ Component, pageProps }: AppProps) {
   const { isReady } = useRouter();
   const [clusterEndpoint, setClusterEndpoint] =
     useState<string>(DEVNET_CLUSTER);
+  const [clusterName, setClusterName] = useState<string>(DEVNET);
   useEffect(() => {
     if (typeof window !== "undefined") {
       const subdomain = window.location.hostname.split(".")[0];
       if (subdomain === "mainnet") {
         setClusterEndpoint(MAINNET_CLUSTER);
+        setClusterName(MAINNET);
       }
     }
   }, [isReady]);
@@ -54,7 +58,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <SlideProgramProvider>
             <AlertProvider template={AlertTemplate} {...AlertOptions}>
               {/* Should probably use another provider for this */}
-              <Component clusterEndpoint={clusterEndpoint} {...pageProps} />
+              <Component cluster={clusterName} {...pageProps} />
             </AlertProvider>
           </SlideProgramProvider>
         </WalletProvider>
