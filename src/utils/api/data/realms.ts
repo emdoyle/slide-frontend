@@ -7,9 +7,15 @@ import {
 
 export async function fetchRealms(
   connection: Connection,
-  programId: PublicKey
+  programIds: PublicKey[]
 ) {
-  return await getRealms(connection, programId);
+  return (
+    await Promise.all(
+      programIds.map(
+        async (programId) => await getRealms(connection, programId)
+      )
+    )
+  ).flat();
 }
 
 export async function fetchTreasuries(

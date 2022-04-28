@@ -32,7 +32,6 @@ import {
   fetchTreasuries,
 } from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
-import { NextPageContext } from "next";
 
 export const ExpenseManagerView: FC<{
   realmsProgramIds: PublicKey[];
@@ -115,6 +114,7 @@ export const ExpenseManagerView: FC<{
                         mutate();
                       }
                     }}
+                    realmsProgramIds={realmsProgramIds}
                   />
                 )}
               </div>
@@ -147,9 +147,11 @@ const ExpenseManagerList = ({ expenseManagers }: ExpenseManagerListProps) => {
 const CreateExpenseManagerModal = ({
   open,
   close,
+  realmsProgramIds = [SPL_GOV_PROGRAM_ID],
 }: {
   open: boolean;
   close: (success?: boolean) => void;
+  realmsProgramIds?: PublicKey[]; // sorta ugly to have this as a prop
 }) => {
   const Alert = useAlert();
   const { publicKey: userPublicKey } = useWallet();
@@ -164,16 +166,25 @@ const CreateExpenseManagerModal = ({
 
   const { data: squads, error: squadsError } = useFnSWRImmutableWithConnection<
     SquadItem[]
-  >(connection, () => (!usingSPL ? [SQUADS_PROGRAM_ID] : null), fetchSquads);
+  >(
+    connection,
+    () => (open && !usingSPL ? [SQUADS_PROGRAM_ID] : null),
+    fetchSquads
+  );
   useErrorAlert(squadsError);
   const { data: realms, error: realmsError } = useFnSWRImmutableWithConnection<
     RealmItem[]
-  >(connection, () => (usingSPL ? [SPL_GOV_PROGRAM_ID] : null), fetchRealms);
+  >(
+    connection,
+    () => (open && usingSPL ? [realmsProgramIds] : null),
+    fetchRealms
+  );
   useErrorAlert(realmsError);
   const { data: treasuries, error: treasuriesError } =
     useFnSWRImmutableWithConnection<TreasuryWithGovernance[]>(
       connection,
-      () => (usingSPL && realm ? [SPL_GOV_PROGRAM_ID, realm.pubkey] : null),
+      () =>
+        open && usingSPL && realm ? [SPL_GOV_PROGRAM_ID, realm.pubkey] : null,
       fetchTreasuries
     );
   useErrorAlert(treasuriesError);
@@ -360,10 +371,3 @@ const CreateExpenseManagerModal = ({
     </div>
   );
 };
-
-export async function getStaticProps(context: NextPageContext) {
-  return {
-    props: { realmsProgramIds: [SPL_GOV_PROGRAM_ID.toBuffer()] },
-    revalidate: 300,
-  };
-}
