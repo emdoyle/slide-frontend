@@ -31,7 +31,7 @@ export default ExpenseManagers;
 export async function getStaticProps(context: NextPageContext) {
   const certifiedRealmsJSONEndpoints = [
     {
-      key: "mainnet-beta",
+      key: "mainnet",
       endpoint: "https://realms.today/realms/mainnet-beta.json",
     },
     { key: "devnet", endpoint: "https://realms.today/realms/devnet.json" },
