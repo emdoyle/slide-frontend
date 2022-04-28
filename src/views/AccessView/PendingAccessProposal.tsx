@@ -20,9 +20,7 @@ import { overflowEllipses, overflowEllipsesPerLine } from "utils/proposals";
 type Props = {
   proposal: ProposalInfo;
   expenseManager: ExpenseManagerItem;
-  // TODO: need to do some state rearranging to get this - SWR abstraction might
-  //  be worth it if there is caching by key/manual invalidation etc.
-  refetchAccessRecords?: () => void;
+  onExecute?: () => void;
 };
 
 const executeAccessProposal = async (
@@ -66,7 +64,7 @@ const executeAccessProposal = async (
 export const PendingAccessProposal: FC<Props> = ({
   proposal,
   expenseManager,
-  refetchAccessRecords,
+  onExecute,
 }) => {
   const Alert = useAlert();
   const { program } = useSlideProgram();
@@ -128,8 +126,8 @@ export const PendingAccessProposal: FC<Props> = ({
             className="btn w-24"
             onClick={() => {
               executeProposal().then(() => {
-                if (refetchAccessRecords) {
-                  refetchAccessRecords();
+                if (onExecute) {
+                  onExecute();
                 }
               });
             }}

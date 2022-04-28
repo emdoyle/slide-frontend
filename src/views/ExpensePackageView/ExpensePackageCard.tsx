@@ -14,7 +14,7 @@ import { Loader } from "components";
 import { useAlert } from "react-alert";
 import { displayPubkey } from "../../utils/formatting";
 import { useSWRConfig } from "swr";
-import { EXPENSE_PACKAGES_KEY } from "../../utils/api";
+import { fetchExpensePackages } from "../../utils/api";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
@@ -361,7 +361,10 @@ export const ExpensePackageCard: FC<Props> = ({
                 setIsLoading(true);
                 submitPackage()
                   .then(() => {
-                    mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
+                    mutate([
+                      fetchExpensePackages.name,
+                      expenseManager.publicKey,
+                    ]);
                   })
                   .catch((err: Error) => Alert.error(err.message))
                   .finally(() => setIsLoading(false));
@@ -382,7 +385,10 @@ export const ExpensePackageCard: FC<Props> = ({
                   setIsLoading(true);
                   approvePackage()
                     .then(() => {
-                      mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
+                      mutate([
+                        fetchExpensePackages.name,
+                        expenseManager.publicKey,
+                      ]);
                     })
                     .catch((err: Error) => Alert.error(err.message))
                     .finally(() => setIsLoading(false));
@@ -396,7 +402,10 @@ export const ExpensePackageCard: FC<Props> = ({
                   setIsLoading(true);
                   denyPackage()
                     .then(() => {
-                      mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
+                      mutate([
+                        fetchExpensePackages.name,
+                        expenseManager.publicKey,
+                      ]);
                     })
                     .catch((err: Error) => Alert.error(err.message))
                     .finally(() => setIsLoading(false));
@@ -425,7 +434,10 @@ export const ExpensePackageCard: FC<Props> = ({
                   setIsLoading(true);
                   withdrawPackage()
                     .then(() => {
-                      mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
+                      mutate([
+                        fetchExpensePackages.name,
+                        expenseManager.publicKey,
+                      ]);
                     })
                     .catch((err: Error) => Alert.error(err.message))
                     .finally(() => setIsLoading(false));

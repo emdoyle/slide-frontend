@@ -43,10 +43,12 @@ function MyApp({ Component, pageProps }: AppProps) {
       const subdomain = window.location.hostname.split(".")[0];
       if (subdomain === "mainnet") {
         setClusterEndpoint(MAINNET_CLUSTER);
-      } else if (subdomain === "localhost") {
-        setClusterEndpoint(LOCAL_CLUSTER);
       }
     }
+    // Testing with devnet for now
+    // } else if (subdomain === "localhost") {
+    //   // setClusterEndpoint(LOCAL_CLUSTER);
+    // }
   }, [isReady]);
 
   return (

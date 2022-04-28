@@ -4,11 +4,9 @@ import { ExpenseManagerItem } from "../../../types";
 import { estimateRentExemptBalanceStatic } from "../../rent";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
-export const EXPENSE_MANAGERS_KEY = "expense-managers";
-
-export const fetchExpenseManagers = async (
+export async function fetchExpenseManagers(
   program: Program<Slide>
-): Promise<ExpenseManagerItem[]> => {
+): Promise<ExpenseManagerItem[]> {
   const expenseManagers: ExpenseManagerItem[] =
     await program.account.expenseManager.all();
   const managerAccountInfos =
@@ -24,14 +22,12 @@ export const fetchExpenseManagers = async (
     }
   });
   return expenseManagers;
-};
+}
 
-export const EXPENSE_MANAGER_KEY = "expense-manager";
-
-export const fetchExpenseManager = async (
+export async function fetchExpenseManager(
   program: Program<Slide>,
   expenseManager: PublicKey
-): Promise<ExpenseManagerItem> => {
+): Promise<ExpenseManagerItem> {
   const managerAccount = await program.account.expenseManager.fetch(
     expenseManager
   );
@@ -39,4 +35,4 @@ export const fetchExpenseManager = async (
     account: managerAccount,
     publicKey: expenseManager,
   };
-};
+}

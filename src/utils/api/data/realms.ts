@@ -5,22 +5,18 @@ import {
   getRealms,
 } from "@solana/spl-governance";
 
-export const REALMS_KEY = "realms";
-
-export const fetchRealms = async (
+export async function fetchRealms(
   connection: Connection,
   programId: PublicKey
-) => {
+) {
   return await getRealms(connection, programId);
-};
+}
 
-export const TREASURIES_KEY = "treasuries";
-
-export const fetchTreasuries = async (
+export async function fetchTreasuries(
   connection: Connection,
   programId: PublicKey,
   realm: PublicKey
-) => {
+) {
   // TODO:
   //   backend Program assumes that the governance is a 'token' governance
   //   because this is what the Realms UI creates when creating a native
@@ -45,4 +41,4 @@ export const fetchTreasuries = async (
           ]
         : []
   );
-};
+}

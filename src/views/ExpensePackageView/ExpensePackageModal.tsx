@@ -11,8 +11,8 @@ import {
   updateSquadsExpensePackage,
 } from "./actions";
 import BN from "bn.js";
-import { EXPENSE_PACKAGES_KEY } from "../../utils/api";
 import { useSWRConfig } from "swr";
+import { fetchExpensePackages } from "../../utils/api";
 
 export const ExpensePackageModal = ({
   open,
@@ -42,7 +42,8 @@ export const ExpensePackageModal = ({
       setQuantity(
         packageToUpdate.account.quantity
           .div(new BN(LAMPORTS_PER_SOL))
-          .toString()
+          .toNumber()
+          .toFixed(6)
       );
     }
   }, [packageToUpdate?.publicKey.toString()]);
@@ -154,7 +155,8 @@ export const ExpensePackageModal = ({
               submitForm()
                 .then(() => {
                   Alert.show("Success");
-                  mutate([EXPENSE_PACKAGES_KEY, expenseManager.publicKey]);
+                  mutate([fetchExpensePackages.name, expenseManager.publicKey]);
+                  close();
                 })
                 .catch((err: Error) => Alert.error(err.message))
                 .finally(() => setIsLoading(false));

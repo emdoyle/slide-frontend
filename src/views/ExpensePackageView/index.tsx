@@ -13,11 +13,11 @@ import {
 } from "types";
 import { useRouter } from "next/router";
 import { ExpensePackageModal } from "./ExpensePackageModal";
-import { useSlideSWRImmutable } from "../../utils/api/fetchers";
 import {
-  ACCESS_RECORD_KEY,
-  EXPENSE_MANAGER_KEY,
-  EXPENSE_PACKAGES_KEY,
+  fetchAccessRecord,
+  fetchExpenseManager,
+  fetchExpensePackages,
+  useFnSWRImmutableWithProgram,
 } from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
 
@@ -37,39 +37,33 @@ export const ExpensePackageView: FC = ({}) => {
     }
   }
 
-  const {
-    data: expenseManager,
-    error: expenseManagerError,
-    isValidating: expenseManagerValidating,
-  } = useSlideSWRImmutable<ExpenseManagerItem>(
-    program,
-    EXPENSE_MANAGER_KEY,
-    () => (expenseManagerPubkey ? [expenseManagerPubkey] : null)
-  );
+  const { data: expenseManager, error: expenseManagerError } =
+    useFnSWRImmutableWithProgram<ExpenseManagerItem>(
+      program,
+      () => expenseManagerPubkey ?? null,
+      fetchExpenseManager
+    );
   useErrorAlert(expenseManagerError);
   const isLoading = connected && !expenseManager && !expenseManagerError;
 
   // no error alert necessary for access record
   const { data: accessRecord, isValidating: accessRecordValidating } =
-    useSlideSWRImmutable<AccessRecordItem>(
+    useFnSWRImmutableWithProgram<AccessRecordItem>(
       program,
-      ACCESS_RECORD_KEY,
       () =>
         expenseManagerPubkey && userPublicKey
           ? [expenseManagerPubkey, userPublicKey]
           : null,
+      fetchAccessRecord,
       { shouldRetryOnError: false }
     );
 
-  const {
-    data: expensePackages,
-    error: expensePackagesError,
-    isValidating: expensePackagesValidating,
-  } = useSlideSWRImmutable<ExpensePackageItem[]>(
-    program,
-    EXPENSE_PACKAGES_KEY,
-    [expenseManagerPubkey]
-  );
+  const { data: expensePackages, error: expensePackagesError } =
+    useFnSWRImmutableWithProgram<ExpensePackageItem[]>(
+      program,
+      () => expenseManagerPubkey ?? null,
+      fetchExpensePackages
+    );
   useErrorAlert(expensePackagesError);
 
   return (

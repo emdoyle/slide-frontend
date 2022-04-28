@@ -11,10 +11,13 @@ import { PendingAccessProposal } from "./PendingAccessProposal";
 import { CreateAccessProposalModal } from "./CreateAccessProposalModal";
 import { isAccessRequest } from "utils/proposals";
 import { useProposals } from "../../utils/api/useProposals";
-import { useSlideSWRImmutable } from "../../utils/api/fetchers";
-import { ACCESS_RECORDS_KEY, EXPENSE_MANAGER_KEY } from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
 import { useSWRConfig } from "swr";
+import {
+  fetchAccessRecords,
+  fetchExpenseManager,
+  useFnSWRImmutableWithProgram,
+} from "../../utils/api";
 
 export const AccessView: FC = ({}) => {
   const router = useRouter();
@@ -33,27 +36,21 @@ export const AccessView: FC = ({}) => {
     }
   }
 
-  const {
-    data: expenseManager,
-    error: expenseManagerError,
-    isValidating: expenseManagerValidating,
-  } = useSlideSWRImmutable<ExpenseManagerItem>(
-    program,
-    EXPENSE_MANAGER_KEY,
-    () => (expenseManagerPubkey ? [expenseManagerPubkey] : null)
-  );
+  const { data: expenseManager, error: expenseManagerError } =
+    useFnSWRImmutableWithProgram<ExpenseManagerItem>(
+      program,
+      () => expenseManagerPubkey ?? null,
+      fetchExpenseManager
+    );
   useErrorAlert(expenseManagerError);
   const expenseManagerLoading = !expenseManager && !expenseManagerError;
 
-  const {
-    data: accessRecords,
-    error: accessRecordsError,
-    isValidating: accessRecordsValidating,
-  } = useSlideSWRImmutable<AccessRecordItem[]>(
-    program,
-    ACCESS_RECORDS_KEY,
-    () => (program && expenseManager ? [expenseManager.publicKey] : null)
-  );
+  const { data: accessRecords, error: accessRecordsError } =
+    useFnSWRImmutableWithProgram<AccessRecordItem[]>(
+      program,
+      () => (program && expenseManager ? [expenseManager.publicKey] : null),
+      fetchAccessRecords
+    );
   const accessRecordsLoading = !accessRecords && !accessRecordsError;
 
   const isLoading =
@@ -149,8 +146,8 @@ const ProposalContent = ({
                 key={proposal.pubkey.toString()}
                 proposal={proposal}
                 expenseManager={expenseManager}
-                refetchAccessRecords={() => {
-                  mutate([ACCESS_RECORDS_KEY, expenseManager.publicKey]);
+                onExecute={() => {
+                  mutate([fetchAccessRecords.name, expenseManager.publicKey]);
                   mutateProposals();
                 }}
               />

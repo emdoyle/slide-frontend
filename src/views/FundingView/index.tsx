@@ -9,8 +9,10 @@ import { ExpenseManagerItem } from "types";
 import { useBalance } from "utils/useBalance";
 import { CreateWithdrawProposalModal } from "./CreateWithdrawProposalModal";
 import { Withdrawals } from "./Withdrawals";
-import { useSlideSWRImmutable } from "../../utils/api/fetchers";
-import { EXPENSE_MANAGER_KEY } from "../../utils/api";
+import {
+  fetchExpenseManager,
+  useFnSWRImmutableWithProgram,
+} from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
 import { useProposals } from "../../utils/api/useProposals";
 
@@ -32,13 +34,12 @@ export const FundingView: FC = ({}) => {
     }
   }
 
-  const {
-    data: expenseManager,
-    error: expenseManagerError,
-    isValidating: expenseManagerValidating,
-  } = useSlideSWRImmutable<ExpenseManagerItem>(program, EXPENSE_MANAGER_KEY, [
-    expenseManagerPubkey,
-  ]);
+  const { data: expenseManager, error: expenseManagerError } =
+    useFnSWRImmutableWithProgram<ExpenseManagerItem>(
+      program,
+      [expenseManagerPubkey],
+      fetchExpenseManager
+    );
   useErrorAlert(expenseManagerError);
   const isLoading = connected && !expenseManager && !expenseManagerError;
 

@@ -1,5 +1,4 @@
 import { FC, useState } from "react";
-import { useSWRConfig } from "swr";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 import { Loader, Nav } from "components";
@@ -14,7 +13,7 @@ import {
   SquadItem,
   SQUADS_PROGRAM_ID,
 } from "@slidexyz/squads-sdk";
-import { TransactionInstruction } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
 import { address, constants, utils } from "@slidexyz/slide-sdk";
 import { SLIDE_PROGRAM_ID } from "../../constants";
@@ -25,29 +24,32 @@ import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
 import {
-  TREASURIES_KEY,
-  EXPENSE_MANAGERS_KEY,
-  REALMS_KEY,
-  SQUADS_KEY,
+  useFnSWRImmutableWithProgram,
+  useFnSWRImmutableWithConnection,
+  fetchExpenseManagers,
+  fetchSquads,
+  fetchRealms,
+  fetchTreasuries,
 } from "../../utils/api";
-import {
-  useSlideSWRImmutable,
-  useSPLGovSWRImmutable,
-  useSquadsSWRImmutable,
-} from "../../utils/api/fetchers";
 import { useErrorAlert } from "../../utils/useErrorAlert";
+import { NextPageContext } from "next";
 
-export const ExpenseManagerView: FC = ({}) => {
+export const ExpenseManagerView: FC<{
+  realmsProgramIds: PublicKey[];
+}> = ({ realmsProgramIds }) => {
   const { connected } = useWallet();
   const { program } = useSlideProgram();
   const [open, setOpen] = useState<boolean>(false);
   const [query, setQuery] = useState<string>("");
-  const { mutate } = useSWRConfig();
   const {
     data: expenseManagers,
     error,
-    isValidating, // TODO: subtle spinner on the side of the screen
-  } = useSlideSWRImmutable<ExpenseManagerItem[]>(program, EXPENSE_MANAGERS_KEY);
+    mutate,
+  } = useFnSWRImmutableWithProgram<ExpenseManagerItem[]>(
+    program,
+    [],
+    fetchExpenseManagers
+  );
   useErrorAlert(error);
   const isLoading = !expenseManagers && !error;
   return (
@@ -110,7 +112,7 @@ export const ExpenseManagerView: FC = ({}) => {
                     close={(success) => {
                       setOpen(false);
                       if (success) {
-                        mutate(EXPENSE_MANAGERS_KEY);
+                        mutate();
                       }
                     }}
                   />
@@ -160,38 +162,20 @@ const CreateExpenseManagerModal = ({
   const [squad, setSquad] = useState<SquadItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const {
-    data: squads,
-    error: squadsError,
-    isValidating: squadsValidating,
-  } = useSquadsSWRImmutable<SquadItem[]>(
-    connection,
-    SQUADS_PROGRAM_ID,
-    SQUADS_KEY,
-    () => (!usingSPL ? [] : null)
-  );
+  const { data: squads, error: squadsError } = useFnSWRImmutableWithConnection<
+    SquadItem[]
+  >(connection, () => (!usingSPL ? [SQUADS_PROGRAM_ID] : null), fetchSquads);
   useErrorAlert(squadsError);
-  const {
-    data: realms,
-    error: realmsError,
-    isValidating: realmsValidating,
-  } = useSPLGovSWRImmutable<RealmItem[]>(
-    connection,
-    SPL_GOV_PROGRAM_ID,
-    REALMS_KEY,
-    () => (usingSPL ? [] : null)
-  );
+  const { data: realms, error: realmsError } = useFnSWRImmutableWithConnection<
+    RealmItem[]
+  >(connection, () => (usingSPL ? [SPL_GOV_PROGRAM_ID] : null), fetchRealms);
   useErrorAlert(realmsError);
-  const {
-    data: treasuries,
-    error: treasuriesError,
-    isValidating: treasuriesValidating,
-  } = useSPLGovSWRImmutable<TreasuryWithGovernance[]>(
-    connection,
-    SPL_GOV_PROGRAM_ID,
-    TREASURIES_KEY,
-    () => (usingSPL && realm ? [realm.pubkey] : null)
-  );
+  const { data: treasuries, error: treasuriesError } =
+    useFnSWRImmutableWithConnection<TreasuryWithGovernance[]>(
+      connection,
+      () => (usingSPL && realm ? [SPL_GOV_PROGRAM_ID, realm.pubkey] : null),
+      fetchTreasuries
+    );
   useErrorAlert(treasuriesError);
 
   const submitForm = async () => {
@@ -376,3 +360,10 @@ const CreateExpenseManagerModal = ({
     </div>
   );
 };
+
+export async function getStaticProps(context: NextPageContext) {
+  return {
+    props: { realmsProgramIds: [SPL_GOV_PROGRAM_ID.toBuffer()] },
+    revalidate: 300,
+  };
+}
