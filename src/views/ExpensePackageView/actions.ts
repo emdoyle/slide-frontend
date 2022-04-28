@@ -1,5 +1,5 @@
 import { Program } from "@project-serum/anchor";
-import { address, constants, Slide } from "@slidexyz/slide-sdk";
+import { getExpensePackageAddressAndBump, Slide } from "@slidexyz/slide-sdk";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { ExpenseManagerItem } from "../../types";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
@@ -21,14 +21,14 @@ export const createSPLExpensePackage = async (
   if (!managerData.realm || !managerData.governanceAuthority) {
     return "Manager not set up for Realms";
   }
-  const [expensePackage] = address.getExpensePackageAddressAndBump(
+  const [expensePackage] = getExpensePackageAddressAndBump(
     expenseManager.publicKey,
     user,
     managerData.expensePackageNonce,
     program.programId
   );
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.realm,
     managerData.membershipTokenMint,
     user
@@ -64,14 +64,14 @@ export const updateSPLExpensePackage = async (
   if (!managerData.realm || !managerData.governanceAuthority) {
     return "Manager not set up for Realms";
   }
-  const [expensePackage] = address.getExpensePackageAddressAndBump(
+  const [expensePackage] = getExpensePackageAddressAndBump(
     expenseManager.publicKey,
     user,
     packageNonce,
     program.programId
   );
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.realm,
     managerData.membershipTokenMint,
     user
@@ -106,7 +106,7 @@ export const createSquadsExpensePackage = async (
   if (!managerData.squad) {
     return "Manager not set up for Squads";
   }
-  const [expensePackage] = address.getExpensePackageAddressAndBump(
+  const [expensePackage] = getExpensePackageAddressAndBump(
     expenseManager.publicKey,
     user,
     managerData.expensePackageNonce,
@@ -147,7 +147,7 @@ export const updateSquadsExpensePackage = async (
   if (!managerData.squad) {
     return "Manager not set up for Squads";
   }
-  const [expensePackage] = address.getExpensePackageAddressAndBump(
+  const [expensePackage] = getExpensePackageAddressAndBump(
     expenseManager.publicKey,
     user,
     packageNonce,

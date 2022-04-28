@@ -3,7 +3,6 @@ import { ExpenseManagerItem, ProposalInfo } from "../../types";
 import { SQUADS_PROGRAM_ID } from "@slidexyz/squads-sdk";
 import { fetchSPLGovProposals, fetchSquadsProposals } from "./data";
 import { useErrorAlert } from "../useErrorAlert";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { Slide } from "@slidexyz/slide-sdk";
 import { Connection } from "@solana/web3.js";
 import { Program } from "@project-serum/anchor";
@@ -53,7 +52,7 @@ export const useProposals = (
     () =>
       expenseManager?.account.realm
         ? [
-            SPL_GOV_PROGRAM_ID,
+            expenseManager.account.externalProgramId,
             expenseManager.publicKey,
             expenseManager.account.realm,
           ]

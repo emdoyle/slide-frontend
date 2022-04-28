@@ -1,5 +1,5 @@
 import { Program } from "@project-serum/anchor";
-import { address, Slide } from "@slidexyz/slide-sdk";
+import { Slide, getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { AccessRecordItem } from "../../../types";
 
@@ -18,10 +18,10 @@ export async function fetchAccessRecord(
   expenseManager: PublicKey,
   user: PublicKey
 ): Promise<AccessRecordItem> {
-  const [accessRecordPubkey] = address.getAccessRecordAddressAndBump(
-    program.programId,
+  const [accessRecordPubkey] = getAccessRecordAddressAndBump(
     expenseManager,
-    user
+    user,
+    program.programId
   );
   const accessRecordAccount = await program.account.accessRecord.fetch(
     accessRecordPubkey

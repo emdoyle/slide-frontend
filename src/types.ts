@@ -1,7 +1,8 @@
 import { AccountInfo, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Governance, ProgramAccount, Realm } from "@solana/spl-governance";
-import { ProposalItem } from "@slidexyz/squads-sdk";
+
+// TODO: these should definitely be coming from Anchor/slide-sdk
 
 export type ExpenseManager = {
   bump: number;
@@ -11,6 +12,7 @@ export type ExpenseManager = {
   name: string;
   realm: PublicKey | null;
   squad: PublicKey | null;
+  externalProgramId: PublicKey;
 };
 
 export type ExpenseManagerItem = {

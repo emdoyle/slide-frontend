@@ -40,10 +40,9 @@ export const ExpensePackageModal = ({
       setName(packageToUpdate.account.name);
       setDescription(packageToUpdate.account.description);
       setQuantity(
-        packageToUpdate.account.quantity
-          .div(new BN(LAMPORTS_PER_SOL))
-          .toNumber()
-          .toFixed(6)
+        (
+          packageToUpdate.account.quantity.toNumber() / LAMPORTS_PER_SOL
+        ).toFixed(6)
       );
     }
   }, [packageToUpdate?.publicKey.toString()]);

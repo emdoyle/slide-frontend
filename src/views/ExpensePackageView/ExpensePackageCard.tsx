@@ -4,7 +4,7 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSlideProgram } from "utils/useSlide";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { constants, address, Slide } from "@slidexyz/slide-sdk";
+import { Slide, getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk";
 import { Program } from "@project-serum/anchor";
 import {
   getMemberEquityAddressAndBump,
@@ -36,7 +36,7 @@ const submitSPLPackage = async (
     return "Manager not setup for Realms";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.realm,
     managerData.membershipTokenMint,
     user
@@ -64,15 +64,15 @@ const approveSPLPackage = async (
     return "Manager not setup for Realms";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.realm,
     managerData.membershipTokenMint,
     user
   );
-  const [accessRecord] = address.getAccessRecordAddressAndBump(
-    program.programId,
+  const [accessRecord] = getAccessRecordAddressAndBump(
     expenseManager.publicKey,
-    user
+    user,
+    program.programId
   );
   await program.methods
     .splGovApproveExpensePackage(managerData.realm, packageData.nonce)
@@ -98,15 +98,15 @@ const denySPLPackage = async (
     return "Manager not setup for Realms";
   }
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.realm,
     managerData.membershipTokenMint,
     user
   );
-  const [accessRecord] = address.getAccessRecordAddressAndBump(
-    program.programId,
+  const [accessRecord] = getAccessRecordAddressAndBump(
     expenseManager.publicKey,
-    user
+    user,
+    program.programId
   );
   await program.methods
     .splGovDenyExpensePackage(managerData.realm, packageData.nonce)
@@ -164,10 +164,10 @@ const approveSquadsPackage = async (
     user,
     managerData.squad
   );
-  const [accessRecord] = address.getAccessRecordAddressAndBump(
-    program.programId,
+  const [accessRecord] = getAccessRecordAddressAndBump(
     expenseManager.publicKey,
-    user
+    user,
+    program.programId
   );
   await program.methods
     .squadsApproveExpensePackage(packageData.nonce)
@@ -198,10 +198,10 @@ const denySquadsPackage = async (
     user,
     managerData.squad
   );
-  const [accessRecord] = address.getAccessRecordAddressAndBump(
-    program.programId,
+  const [accessRecord] = getAccessRecordAddressAndBump(
     expenseManager.publicKey,
-    user
+    user,
+    program.programId
   );
   await program.methods
     .squadsDenyExpensePackage(packageData.nonce)

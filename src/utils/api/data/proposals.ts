@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { getProposals } from "@slidexyz/squads-sdk";
-import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
+import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk";
 import { ProposalInfo } from "../../../types";
 import { SPLProposalToInfo, squadsProposalToInfo } from "../../proposals";
 import { getAllProposals } from "@solana/spl-governance";
@@ -16,9 +16,9 @@ export async function fetchSquadsProposals(
   const proposalExecutions = proposalItems.map(
     (proposal) =>
       getProposalExecutionAddressAndBump(
-        slideProgramId,
         expenseManager,
-        proposal.pubkey
+        proposal.pubkey,
+        slideProgramId
       )[0]
   );
   const executionAccountInfos = await connection.getMultipleAccountsInfo(

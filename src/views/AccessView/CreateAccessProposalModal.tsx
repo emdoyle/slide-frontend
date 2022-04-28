@@ -5,7 +5,7 @@ import { useSlideProgram } from "utils/useSlide";
 import { useState } from "react";
 import { Loader } from "components";
 import { createSPLAccessProposal, createSquadsAccessProposal } from "./actions";
-import { address } from "@slidexyz/slide-sdk";
+import { getAccessRecordAddressAndBump } from "@slidexyz/slide-sdk";
 
 export const CreateAccessProposalModal = ({
   open,
@@ -27,10 +27,10 @@ export const CreateAccessProposalModal = ({
     if (!program || !expenseManager || !userPublicKey) return;
     const managerData = expenseManager.account;
     let alertText;
-    const [accessRecord] = address.getAccessRecordAddressAndBump(
-      program.programId,
+    const [accessRecord] = getAccessRecordAddressAndBump(
       expenseManager.publicKey,
-      userPublicKey
+      userPublicKey,
+      program.programId
     );
     if (managerData.realm && managerData.governanceAuthority) {
       alertText = await createSPLAccessProposal(

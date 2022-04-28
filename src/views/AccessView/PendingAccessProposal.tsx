@@ -5,12 +5,12 @@ import {
 import { ExpenseManagerItem, ProposalInfo } from "types";
 import { FC, useState } from "react";
 import { Program } from "@project-serum/anchor";
-import { Slide } from "@slidexyz/slide-sdk";
-import { PublicKey } from "@solana/web3.js";
 import {
+  Slide,
   getAccessRecordAddressAndBump,
   getProposalExecutionAddressAndBump,
-} from "@slidexyz/slide-sdk/lib/address";
+} from "@slidexyz/slide-sdk";
+import { PublicKey } from "@solana/web3.js";
 import { Loader } from "components";
 import { useSlideProgram } from "utils/useSlide";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -31,14 +31,14 @@ const executeAccessProposal = async (
 ): Promise<string | undefined> => {
   if (expenseManager.account.squad) {
     const [accessRecord] = getAccessRecordAddressAndBump(
-      program.programId,
       expenseManager.publicKey,
-      user
+      user,
+      program.programId
     );
     const [proposalExecution] = getProposalExecutionAddressAndBump(
-      program.programId,
       expenseManager.publicKey,
-      proposal
+      proposal,
+      program.programId
     );
     const [squadMint] = await getSquadMintAddressAndBump(
       SQUADS_PROGRAM_ID,

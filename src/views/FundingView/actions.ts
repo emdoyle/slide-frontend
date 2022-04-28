@@ -1,5 +1,5 @@
 import { Program } from "@project-serum/anchor";
-import { constants, Slide, utils } from "@slidexyz/slide-sdk";
+import { Slide, getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk";
 import {
   Connection,
   LAMPORTS_PER_SOL,
@@ -25,7 +25,6 @@ import {
   SQUADS_PROGRAM_ID,
   withCreateProposalAccount,
 } from "@slidexyz/squads-sdk";
-import { getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk/lib/address";
 import { displayPubkey } from "utils/formatting";
 import BN from "bn.js";
 
@@ -45,11 +44,11 @@ export const createSPLWithdrawalProposal = async (
     managerData.governanceAuthority
   );
   const nativeTreasury = await getNativeTreasuryAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.governanceAuthority
   );
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.realm,
     managerData.membershipTokenMint,
     user
@@ -71,7 +70,7 @@ export const createSPLWithdrawalProposal = async (
   let instructions: TransactionInstruction[] = [];
   const proposal = await withCreateProposal(
     instructions,
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     2,
     managerData.realm,
     managerData.governanceAuthority,
@@ -90,7 +89,7 @@ export const createSPLWithdrawalProposal = async (
   );
   await withInsertTransaction(
     instructions,
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     2,
     managerData.governanceAuthority,
     proposal,
@@ -106,7 +105,7 @@ export const createSPLWithdrawalProposal = async (
   // TODO: this may not be necessary
   await withSignOffProposal(
     instructions,
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     2,
     managerData.realm,
     managerData.governanceAuthority,
@@ -169,9 +168,9 @@ export const executeWithdrawalProposal = async (
     throw new Error("Manager is not set up for Squads");
   }
   const [proposalExecution] = getProposalExecutionAddressAndBump(
-    program.programId,
     expenseManager.publicKey,
-    proposal
+    proposal,
+    program.programId
   );
   const [squadMint] = await getSquadMintAddressAndBump(
     SQUADS_PROGRAM_ID,

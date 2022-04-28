@@ -9,13 +9,16 @@ export async function fetchRealms(
   connection: Connection,
   programIds: PublicKey[]
 ) {
-  return (
-    await Promise.all(
-      programIds.map(
-        async (programId) => await getRealms(connection, programId)
-      )
-    )
-  ).flat();
+  const results = [];
+  for (let i = 0; i < programIds.length; i++) {
+    results.push(await getRealms(connection, programIds[i]));
+    // artificial slowdown to avoid rate limit
+    // TODO: either need to get a private RPC or cache this data server-side
+    //   staticProps is an option but need to deal with serialization
+    //   prob need to deal with serialization regardless
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return results.flat();
 }
 
 export async function fetchTreasuries(

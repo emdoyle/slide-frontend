@@ -1,5 +1,5 @@
 import { Program } from "@project-serum/anchor";
-import { constants, Slide, utils } from "@slidexyz/slide-sdk";
+import { Slide } from "@slidexyz/slide-sdk";
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { ExpenseManagerItem } from "types";
 import {
@@ -36,11 +36,11 @@ export const createSPLAccessProposal = async (
     await getGovernance(connection, managerData.governanceAuthority)
   ).account.proposalCount;
   const nativeTreasury = await getNativeTreasuryAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.governanceAuthority
   );
   const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     managerData.realm,
     managerData.membershipTokenMint,
     user
@@ -65,7 +65,7 @@ export const createSPLAccessProposal = async (
   let instructions: TransactionInstruction[] = [];
   const proposal = await withCreateProposal(
     instructions,
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     2,
     managerData.realm,
     managerData.governanceAuthority,
@@ -82,7 +82,7 @@ export const createSPLAccessProposal = async (
   );
   await withInsertTransaction(
     instructions,
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     2,
     managerData.governanceAuthority,
     proposal,
@@ -98,7 +98,7 @@ export const createSPLAccessProposal = async (
   // TODO: this may not be necessary
   await withSignOffProposal(
     instructions,
-    constants.SPL_GOV_PROGRAM_ID,
+    managerData.externalProgramId,
     2,
     managerData.realm,
     managerData.governanceAuthority,

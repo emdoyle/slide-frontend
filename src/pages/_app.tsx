@@ -13,7 +13,7 @@ import "../styles/App.css";
 import { serializePubkeysForCache } from "../utils/swrMiddleware";
 import { useRouter } from "next/router";
 
-// localnet
+// localnet (not really using this atm)
 const LOCAL_CLUSTER = "http://127.0.0.1:8899";
 // devnet
 const DEVNET_CLUSTER = "https://api.devnet.solana.com";
@@ -45,10 +45,6 @@ function MyApp({ Component, pageProps }: AppProps) {
         setClusterEndpoint(MAINNET_CLUSTER);
       }
     }
-    // Testing with devnet for now
-    // } else if (subdomain === "localhost") {
-    //   // setClusterEndpoint(LOCAL_CLUSTER);
-    // }
   }, [isReady]);
 
   return (
@@ -57,7 +53,8 @@ function MyApp({ Component, pageProps }: AppProps) {
         <WalletProvider>
           <SlideProgramProvider>
             <AlertProvider template={AlertTemplate} {...AlertOptions}>
-              <Component {...pageProps} />
+              {/* Should probably use another provider for this */}
+              <Component clusterEndpoint={clusterEndpoint} {...pageProps} />
             </AlertProvider>
           </SlideProgramProvider>
         </WalletProvider>

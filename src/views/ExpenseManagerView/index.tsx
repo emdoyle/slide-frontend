@@ -15,12 +15,10 @@ import {
 } from "@slidexyz/squads-sdk";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { address, constants, utils } from "@slidexyz/slide-sdk";
-import { SLIDE_PROGRAM_ID } from "../../constants";
+import { SLIDE_PROGRAM_ID, SPL_GOV_SHARED_PROGRAM_ID } from "../../constants";
 import { useAlert } from "react-alert";
 import { SquadsCombobox } from "./SquadsCombobox";
 import { RealmsCombobox } from "./RealmsCombobox";
-import { SPL_GOV_PROGRAM_ID } from "@slidexyz/slide-sdk/lib/constants";
 import { TreasuryCombobox } from "./TreasuryCombobox";
 import { SearchIcon } from "@heroicons/react/solid";
 import {
@@ -32,6 +30,10 @@ import {
   fetchTreasuries,
 } from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
+import {
+  flushInstructions,
+  getExpenseManagerAddressAndBump,
+} from "@slidexyz/slide-sdk";
 
 export const ExpenseManagerView: FC<{
   realmsProgramIds: PublicKey[];
@@ -147,7 +149,7 @@ const ExpenseManagerList = ({ expenseManagers }: ExpenseManagerListProps) => {
 const CreateExpenseManagerModal = ({
   open,
   close,
-  realmsProgramIds = [SPL_GOV_PROGRAM_ID],
+  realmsProgramIds = [SPL_GOV_SHARED_PROGRAM_ID],
 }: {
   open: boolean;
   close: (success?: boolean) => void;
@@ -183,8 +185,7 @@ const CreateExpenseManagerModal = ({
   const { data: treasuries, error: treasuriesError } =
     useFnSWRImmutableWithConnection<TreasuryWithGovernance[]>(
       connection,
-      () =>
-        open && usingSPL && realm ? [SPL_GOV_PROGRAM_ID, realm.pubkey] : null,
+      () => (open && usingSPL && realm ? [realm.owner, realm.pubkey] : null),
       fetchTreasuries
     );
   useErrorAlert(treasuriesError);
@@ -197,7 +198,7 @@ const CreateExpenseManagerModal = ({
 
     let govTokenMint;
     if (usingSPL) {
-      if (!realm?.pubkey || !treasury?.pubkey) {
+      if (!realm || !treasury) {
         Alert.show(
           "Could not parse Public Keys from selected Realm and Treasury."
         );
@@ -205,7 +206,7 @@ const CreateExpenseManagerModal = ({
       }
       govTokenMint = realm.account.communityMint;
     } else {
-      if (!squad?.pubkey) {
+      if (!squad) {
         Alert.show("Could not parse Public Keys from selected Squad.");
         return;
       }
@@ -214,7 +215,7 @@ const CreateExpenseManagerModal = ({
         squad.pubkey
       );
     }
-    const [expenseManager] = address.getExpenseManagerAddressAndBump(
+    const [expenseManager] = getExpenseManagerAddressAndBump(
       name,
       SLIDE_PROGRAM_ID
     );
@@ -227,45 +228,43 @@ const CreateExpenseManagerModal = ({
       })
       .instruction();
     let initializeManager: TransactionInstruction;
-    if (usingSPL) {
+    if (usingSPL && realm && treasury) {
       const tokenOwnerRecord = await getTokenOwnerRecordAddress(
-        constants.SPL_GOV_PROGRAM_ID,
-        // @ts-ignore
-        realm?.pubkey,
+        realm.owner,
+        realm.pubkey,
         govTokenMint,
         userPublicKey
       );
       initializeManager = await program.methods
-        .splGovInitializeExpenseManager(
-          // @ts-ignore
-          realm?.pubkey
-        )
+        .splGovInitializeExpenseManager(realm.pubkey, realm.owner)
         .accounts({
           expenseManager,
-          governanceAuthority: treasury?.governance.pubkey,
+          governanceAuthority: treasury.governance.pubkey,
           tokenOwnerRecord,
           member: userPublicKey,
         })
         .instruction();
-    } else {
+    } else if (!usingSPL && squad) {
       const [memberEquityRecord] = await getMemberEquityAddressAndBump(
         SQUADS_PROGRAM_ID,
         userPublicKey,
-        // @ts-ignore
-        squad?.pubkey
+        squad.pubkey
       );
       initializeManager = await program.methods
-        .squadsInitializeExpenseManager()
+        .squadsInitializeExpenseManager(SQUADS_PROGRAM_ID)
         .accounts({
           expenseManager,
           memberEquity: memberEquityRecord,
-          squad: squad?.pubkey,
+          squad: squad.pubkey,
           member: userPublicKey,
         })
         .instruction();
+    } else {
+      Alert.show("An error occurred while preparing the Transaction.");
+      return;
     }
 
-    await utils.flushInstructions(
+    await flushInstructions(
       // @ts-ignore
       program,
       [createManager, initializeManager],
