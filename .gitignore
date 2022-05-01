@@ -40,3 +40,4 @@ yarn-error.log*
 .idea
 
 dao_member*.json
+scratch*

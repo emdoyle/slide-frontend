@@ -56,6 +56,11 @@ export async function getStaticProps(context: NextPageContext) {
       uniqueProgramIds.values()
     );
   }
+  // This is the Slide custom deployment of SPL Governance on Devnet
+  // This can be removed if the custom deployment DAO is certified.
+  realmsProgramIds["devnet"].push(
+    new PublicKey("HdQiqXnP9na6XMQs7P23g6sHkGQaR4mKmxJuCEt3ygif").toJSON()
+  );
 
   return {
     props: {
