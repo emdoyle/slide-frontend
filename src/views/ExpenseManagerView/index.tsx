@@ -186,6 +186,7 @@ const CreateExpenseManagerModal = ({
     () => (open && usingSPL ? [realmsProgramIds] : null),
     fetchRealms
   );
+  const realmsLoading = open && usingSPL && !realms && !realmsError;
   useErrorAlert(realmsError);
   const { data: treasuries, error: treasuriesError } =
     useFnSWRImmutableWithConnection<TreasuryWithGovernance[]>(
@@ -326,7 +327,7 @@ const CreateExpenseManagerModal = ({
           {usingSPL && (
             <>
               <RealmsCombobox
-                disabled={isSubmitting}
+                disabled={realmsLoading || isSubmitting}
                 realms={realms ?? []}
                 selectedRealm={realm}
                 setSelectedRealm={setRealm}
@@ -337,6 +338,7 @@ const CreateExpenseManagerModal = ({
                 setSelectedTreasury={setTreasury}
                 disabled={isSubmitting || !realm}
               />
+              {realmsLoading && <Loader text="Fetching realms..." />}
             </>
           )}
           {!usingSPL && (
