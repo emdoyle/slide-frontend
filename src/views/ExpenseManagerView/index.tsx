@@ -15,7 +15,7 @@ import {
 } from "@slidexyz/squads-sdk";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { getTokenOwnerRecordAddress } from "@solana/spl-governance";
-import { SLIDE_PROGRAM_ID, SPL_GOV_SHARED_PROGRAM_ID } from "../../constants";
+import { SPL_GOV_SHARED_PROGRAM_ID } from "../../constants";
 import { useAlert } from "react-alert";
 import { SquadsCombobox } from "./SquadsCombobox";
 import { RealmsCombobox } from "./RealmsCombobox";
@@ -223,7 +223,7 @@ const CreateExpenseManagerModal = ({
     }
     const [expenseManager] = getExpenseManagerAddressAndBump(
       name,
-      SLIDE_PROGRAM_ID
+      program.programId
     );
 
     const createManager: TransactionInstruction = await program.methods

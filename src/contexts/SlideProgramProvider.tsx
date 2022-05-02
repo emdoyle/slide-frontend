@@ -3,7 +3,7 @@ import { FC, ReactNode } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { getSlide } from "@slidexyz/slide-sdk";
 import { SlideProgramContext } from "utils/useSlide";
-import { SLIDE_PROGRAM_ID } from "../constants";
+import { SLIDE_DEVNET_PROGRAM_ID } from "../constants";
 
 export interface SlideProgramProviderProps {
   children: ReactNode;
@@ -11,7 +11,7 @@ export interface SlideProgramProviderProps {
 }
 
 export const SlideProgramProvider: FC<SlideProgramProviderProps> = ({
-  programId = SLIDE_PROGRAM_ID,
+  programId = SLIDE_DEVNET_PROGRAM_ID,
   children,
 }) => {
   const wallet = useAnchorWallet();

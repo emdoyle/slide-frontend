@@ -12,6 +12,10 @@ import "../styles/globals.css";
 import "../styles/App.css";
 import { serializePubkeysForCache } from "../utils/swrMiddleware";
 import { useRouter } from "next/router";
+import {
+  SLIDE_DEVNET_PROGRAM_ID,
+  SLIDE_MAINNET_PROGRAM_ID,
+} from "../constants";
 
 // localnet (not really using this atm)
 const LOCAL_CLUSTER = "http://127.0.0.1:8899";
@@ -51,11 +55,18 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }, [isReady]);
 
+  const slideProgramId =
+    clusterName === DEVNET
+      ? SLIDE_DEVNET_PROGRAM_ID
+      : clusterName === MAINNET
+      ? SLIDE_MAINNET_PROGRAM_ID
+      : undefined;
+
   return (
     <SWRConfig value={{ use: [serializePubkeysForCache] }}>
       <ConnectionProvider endpoint={clusterEndpoint}>
         <WalletProvider>
-          <SlideProgramProvider>
+          <SlideProgramProvider programId={slideProgramId}>
             <AlertProvider template={AlertTemplate} {...AlertOptions}>
               {/* Should probably use another provider for this */}
               <Component cluster={clusterName} {...pageProps} />
