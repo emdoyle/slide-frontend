@@ -9,7 +9,7 @@ type Props = {
 
 export const ExpenseManagerCard: FC<Props> = ({ expenseManager }) => {
   let balanceDisplay;
-  if (expenseManager.balance) {
+  if (expenseManager.balance && Number(expenseManager.balance.toFixed(2))) {
     balanceDisplay = `(Balance: ~${expenseManager.balance.toFixed(2)}◎)`;
   } else {
     balanceDisplay = "";
