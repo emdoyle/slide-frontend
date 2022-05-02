@@ -15,6 +15,7 @@ import {
 } from "../../utils/api";
 import { useErrorAlert } from "../../utils/useErrorAlert";
 import { useProposals } from "../../utils/api/useProposals";
+import { displayBalance } from "../../utils/formatting";
 
 export const FundingView: FC = ({}) => {
   const { connection } = useConnection();
@@ -52,12 +53,7 @@ export const FundingView: FC = ({}) => {
   const { balance: managerBalance } = useBalance(
     expenseManager?.publicKey ?? null
   );
-  let balanceDisplay;
-  if (managerBalance) {
-    balanceDisplay = `(Balance: ~${managerBalance.toFixed(2)}◎)`;
-  } else {
-    balanceDisplay = "(Balance: 0.00◎)";
-  }
+  const balanceDisplay = displayBalance(managerBalance);
 
   return (
     <div className="text-center pt-2">

@@ -2,19 +2,14 @@ import { FC } from "react";
 import Link from "next/link";
 
 import { ExpenseManagerItem } from "types";
+import { displayBalance } from "../../utils/formatting";
 
 type Props = {
   expenseManager: ExpenseManagerItem;
 };
 
 export const ExpenseManagerCard: FC<Props> = ({ expenseManager }) => {
-  let balanceDisplay;
-  if (expenseManager.balance && Number(expenseManager.balance.toFixed(2))) {
-    balanceDisplay = `(Balance: ~${expenseManager.balance.toFixed(2)}◎)`;
-  } else {
-    balanceDisplay = "";
-  }
-
+  const balanceDisplay = displayBalance(expenseManager.balance);
   const usingSPL = Boolean(
     expenseManager.account.realm && expenseManager.account.governanceAuthority
   );

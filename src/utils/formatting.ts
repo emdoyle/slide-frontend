@@ -16,6 +16,13 @@ export const displayPubkey = (
   )}`;
 };
 
+export const displayBalance = (balance: number | null | undefined): string => {
+  if (balance && Number(balance.toFixed(2))) {
+    return `(Balance: ~${balance.toFixed(2)}◎)`;
+  }
+  return "";
+};
+
 export const capitalize = (word: string): string => {
   if (!word.length) return word;
   return `${word.charAt(0).toUpperCase()}${word.slice(1)}`;
