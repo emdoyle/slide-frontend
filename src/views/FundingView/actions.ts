@@ -1,5 +1,9 @@
 import { Program } from "@project-serum/anchor";
-import { Slide, getProposalExecutionAddressAndBump } from "@slidexyz/slide-sdk";
+import {
+  Slide,
+  getProposalExecutionAddressAndBump,
+  flushInstructions,
+} from "@slidexyz/slide-sdk";
 import {
   Connection,
   LAMPORTS_PER_SOL,
@@ -116,7 +120,7 @@ export const createSPLWithdrawalProposal = async (
   );
 
   // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
+  await flushInstructions(program, instructions, []);
 
   return `Created proposal: ${displayPubkey(proposal)}`;
 };
@@ -152,7 +156,7 @@ export const createSquadsWithdrawalProposal = async (
   );
 
   // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
+  await flushInstructions(program, instructions, []);
 
   return `Created proposal: ${displayPubkey(proposal)}`;
 };

@@ -1,5 +1,5 @@
 import { Program } from "@project-serum/anchor";
-import { Slide } from "@slidexyz/slide-sdk";
+import { flushInstructions, Slide } from "@slidexyz/slide-sdk";
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { ExpenseManagerItem } from "types";
 import {
@@ -109,7 +109,7 @@ export const createSPLAccessProposal = async (
   );
 
   // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
+  await flushInstructions(program, instructions, []);
 };
 
 export const createSquadsAccessProposal = async (
@@ -140,5 +140,5 @@ export const createSquadsAccessProposal = async (
   );
 
   // @ts-ignore
-  await utils.flushInstructions(program, instructions, []);
+  await flushInstructions(program, instructions, []);
 };

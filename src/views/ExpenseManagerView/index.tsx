@@ -34,6 +34,7 @@ import {
   flushInstructions,
   getExpenseManagerAddressAndBump,
 } from "@slidexyz/slide-sdk";
+import { govAccountToRPCEnum } from "../../utils/governance";
 
 export const ExpenseManagerView: FC<{
   realmsProgramIds: PublicKey[];
@@ -236,7 +237,11 @@ const CreateExpenseManagerModal = ({
         userPublicKey
       );
       initializeManager = await program.methods
-        .splGovInitializeExpenseManager(realm.pubkey, realm.owner)
+        .splGovInitializeExpenseManager(
+          realm.pubkey,
+          govAccountToRPCEnum(treasury.governance.account.accountType),
+          realm.owner
+        )
         .accounts({
           expenseManager,
           governanceAuthority: treasury.governance.pubkey,
