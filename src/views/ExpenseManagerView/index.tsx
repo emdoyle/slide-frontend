@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 import { Loader, Nav } from "components";
@@ -166,6 +166,10 @@ const CreateExpenseManagerModal = ({
   const [treasury, setTreasury] = useState<TreasuryWithGovernance | null>(null);
   const [squad, setSquad] = useState<SquadItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    setTreasury(null);
+  }, [realm]);
 
   const { data: squads, error: squadsError } = useFnSWRImmutableWithConnection<
     SquadItem[]
