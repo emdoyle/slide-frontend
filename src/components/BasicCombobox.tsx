@@ -58,6 +58,7 @@ export function BasicCombobox<T>({
               {label}
             </Combobox.Label>
             <Combobox.Input
+              autoComplete="off"
               className="w-full border-none focus:ring-0 py-8 pb-2 pl-3 pr-10 text-sm leading-5 text-gray-900"
               displayValue={getDisplayable}
               onChange={(event) => setQuery(event.target.value)}
